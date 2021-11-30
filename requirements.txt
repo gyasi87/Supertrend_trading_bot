@@ -1,0 +1,10 @@
+ccxt
+schedule
+pandas
+warnings
+pickle
+os
+numpy 
+datetime 
+threading
+ta

@@ -1,4 +1,4 @@
-import ccxt
+import ccxt 
 import config
 import schedule
 import pandas as pd

@@ -1,4 +1,5 @@
 import ccxt 
+from pprint import pprint
 import config
 import schedule
 import pandas as pd
@@ -15,13 +16,27 @@ import time
 import math
 import threading
 
-
-exchange_id = 'binance'
-exchange_class = getattr(ccxt, exchange_id)
-exchange = exchange_class({
-    'apiKey': config.BINANCE_API_KEY,
-    'secret': config.BINANCE_SECRET_KEY,
-})
+if config.IS_TESTNET:
+    #testnet binance
+    print('CCXT version:', ccxt.__version__)  # requires CCXT version > 1.20.31
+    exchange = ccxt.binance({
+        'apiKey': config.BINANCE_API_KEY_TEST,
+        'secret': config.BINANCE_SECRET_KEY_TEST,
+        'enableRateLimit': True,
+        'options': {
+            'defaultType': 'future', 
+        },
+    })
+    exchange.set_sandbox_mode(True)
+    #response = exchange.fapiPrivateGetPositionRisk()  # <<<<<<<<<<<<<<< changed for fapiPrivateGetPositionRisk here
+    #pprint(response)
+else:
+    exchange_id = 'binance'
+    exchange_class = getattr(ccxt, exchange_id)
+    exchange = exchange_class({
+        'apiKey': config.BINANCE_API_KEY_PROD,
+        'secret': config.BINANCE_SECRET_KEY_PROD,
+    })
 
 markets = exchange.load_markets()
 
@@ -316,12 +331,8 @@ def while_trading(dict3,allocation):
             exchange.create_market_buy_order(k, round(buy_amount,2))
             print(f'Bought {k}')
             v['in position'] = True
-            
-            
-            
 
-    
-                        
+
 
 def save_trading(dict1):
 
@@ -367,13 +378,23 @@ def which_trades(dict1):
 
 
 def run_bot():
-    trade = ['BTC/USDT', 'ETH/USDT', 'BNB/USDT', 
-    'NEO/USDT', 'LTC/USDT', 'QTUM/USDT', 'ADA/USDT', 'XRP/USDT', 
-    'EOS/USDT','LINK/USDT','VET/USDT','MATIC/USDT','DOGE/USDT','DOT/USDT', 
-    'LUNA/USDT', 'RSR/USDT','SHIB/USDT','ZIL/USDT', 'ZRX/USDT','ETC/USDT','BAKE/USDT',
-    'SOL/USDT','THETA/USDT', 'ENJ/USDT','DASH/USDT','KSM/USDT','SUPER/USDT','SUSHI/USDT','XLM/USDT',
-    'BADGER/USDT', 'CKB/USDT', 'ICP/USDT', 'IOTA/USDT', 'ALGO/USDT','MKR/USDT','BCH/USDT','SAND/USDT', 
-    'CAKE/USDT','AAVE/USDT', 'KAVA/USDT', 'TFUEL/USDT', 'ONE/USDT', 'FIL/USDT', 'UNI/USDT', 'XMR/USDT', 'BAT/USDT','CTXC/USDT','GBP/USDT','BAR/USDT']
+
+    if config.IS_TESTNET:
+        trade = ['BTC/USDT', 'ETH/USDT', 'BNB/USDT', 
+        'NEO/USDT', 'LTC/USDT', 'QTUM/USDT', 'ADA/USDT', 'XRP/USDT', 
+        'EOS/USDT','LINK/USDT','VET/USDT','MATIC/USDT','DOGE/USDT','DOT/USDT', 
+        'RSR/USDT','SHIB/USDT','ZIL/USDT', 'ZRX/USDT','ETC/USDT','BAKE/USDT',
+        'SOL/USDT','THETA/USDT', 'ENJ/USDT','DASH/USDT','KSM/USDT','SUPER/USDT','SUSHI/USDT','XLM/USDT',
+        'BADGER/USDT', 'CKB/USDT', 'ICP/USDT', 'IOTA/USDT', 'ALGO/USDT','MKR/USDT','BCH/USDT','SAND/USDT', 
+        'CAKE/USDT','AAVE/USDT', 'KAVA/USDT', 'TFUEL/USDT', 'ONE/USDT', 'FIL/USDT', 'UNI/USDT', 'XMR/USDT', 'BAT/USDT','CTXC/USDT','GBP/USDT','BAR/USDT']
+    else:        
+        trade = ['BTC/USDT', 'ETH/USDT', 'BNB/USDT', 
+        'NEO/USDT', 'LTC/USDT', 'QTUM/USDT', 'ADA/USDT', 'XRP/USDT', 
+        'EOS/USDT','LINK/USDT','VET/USDT','MATIC/USDT','DOGE/USDT','DOT/USDT', 
+        'LUNA/USDT', 'RSR/USDT','SHIB/USDT','ZIL/USDT', 'ZRX/USDT','ETC/USDT','BAKE/USDT',
+        'SOL/USDT','THETA/USDT', 'ENJ/USDT','DASH/USDT','KSM/USDT','SUPER/USDT','SUSHI/USDT','XLM/USDT',
+        'BADGER/USDT', 'CKB/USDT', 'ICP/USDT', 'IOTA/USDT', 'ALGO/USDT','MKR/USDT','BCH/USDT','SAND/USDT', 
+        'CAKE/USDT','AAVE/USDT', 'KAVA/USDT', 'TFUEL/USDT', 'ONE/USDT', 'FIL/USDT', 'UNI/USDT', 'XMR/USDT', 'BAT/USDT','CTXC/USDT','GBP/USDT','BAR/USDT']
 
     tradable_market = tradable_markets(trade)
 
@@ -405,7 +426,7 @@ def run_bot():
 
 
 schedule.every().hour.at(":00").do(run_bot)
-
+#schedule.every(1).minutes.do(run_bot)
 
 
 while True:

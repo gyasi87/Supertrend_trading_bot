@@ -380,13 +380,7 @@ def which_trades(dict1):
 def run_bot():
 
     if config.IS_TESTNET:
-        trade = ['BTC/USDT', 'ETH/USDT', 'BNB/USDT', 
-        'NEO/USDT', 'LTC/USDT', 'QTUM/USDT', 'ADA/USDT', 'XRP/USDT', 
-        'EOS/USDT','LINK/USDT','VET/USDT','MATIC/USDT','DOGE/USDT','DOT/USDT', 
-        'RSR/USDT','SHIB/USDT','ZIL/USDT', 'ZRX/USDT','ETC/USDT','BAKE/USDT',
-        'SOL/USDT','THETA/USDT', 'ENJ/USDT','DASH/USDT','KSM/USDT','SUPER/USDT','SUSHI/USDT','XLM/USDT',
-        'BADGER/USDT', 'CKB/USDT', 'ICP/USDT', 'IOTA/USDT', 'ALGO/USDT','MKR/USDT','BCH/USDT','SAND/USDT', 
-        'CAKE/USDT','AAVE/USDT', 'KAVA/USDT', 'TFUEL/USDT', 'ONE/USDT', 'FIL/USDT', 'UNI/USDT', 'XMR/USDT', 'BAT/USDT','CTXC/USDT','GBP/USDT','BAR/USDT']
+        trade = ['BTC/USDT', 'ETH/USDT']
     else:        
         trade = ['BTC/USDT', 'ETH/USDT', 'BNB/USDT', 
         'NEO/USDT', 'LTC/USDT', 'QTUM/USDT', 'ADA/USDT', 'XRP/USDT', 

@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+*.pyo
+.env
+.venv/
+venv/
+positions.json
+trading.p

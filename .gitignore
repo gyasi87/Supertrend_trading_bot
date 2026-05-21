@@ -6,3 +6,5 @@ __pycache__/
 venv/
 positions.json
 trading.p
+bot.log
+bot.log.*

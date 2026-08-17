@@ -44,8 +44,8 @@ auto-approved with zero human touch: 70%
 silently-wrong auto-approvals: 0 / 20   <-- the number that actually matters
 ```
 
-**Four rounds of blind critique found real bugs, all fixed and now
-regression-tested (`test_extraction.py`, 12/12 passing):**
+**Five rounds of blind critique found real bugs, all fixed and now
+regression-tested (`test_extraction.py`, 14/14 passing):**
 
 1. *Vendor extraction* originally picked whichever of the first lines
    had the most alphabetic characters, so a metadata line ("Store #895
@@ -92,13 +92,30 @@ regression-tested (`test_extraction.py`, 12/12 passing):**
    lines near the receipt header (where a purchase date conventionally
    sits even unlabeled), and only trusting a date found elsewhere in the
    text with reduced confidence.
+7. *Round 4's own GRAND TOTAL fix removed all validation from that
+   path*, which round 5 caught immediately: an OCR-dropped digit on a
+   grand total ($64.00 misread as $6.00) was trusted outright, since
+   "no arithmetic check" for grand totals meant no check at all, not
+   just no *equality* check. Fixed with a one-directional check instead
+   of a redesign: a tip only ever adds, so a grand total below
+   subtotal+tax is impossible and marked untrusted, while a grand total
+   at or above it (the legitimate tip case from round 4) still passes.
+   Also fixed a related gap: a receipt with a tip/gratuity line but no
+   printed grand total (e.g. a blank "Tip ___" line) was auto-approving
+   the pre-tip total as if it were final -- now marked untrusted
+   whenever a tip line exists without a resolvable grand total.
 
 The `silently-wrong auto-approvals: 0/20` line is the real claim, and
-each round of adversarial construction against it (eight constructed
-cases across four rounds, all now regression tests) has failed to break
+each round of adversarial construction against it (ten constructed
+cases across five rounds, all now regression tests) has failed to break
 it -- though the auto-approval rate has dropped from 80% to 70% as the
 gates got stricter, which is the honest cost of the guarantee actually
-holding rather than passing by coincidence on one benchmark batch.
+holding rather than passing by coincidence on one benchmark batch. Note
+that rounds 4 and 5 form a pair worth being candid about: round 4's fix
+for the tip-laundering bug (exempting GRAND TOTAL from arithmetic
+checking) itself introduced the gap round 5 found. The fix this time is
+a narrower, one-directional constraint rather than another blanket
+exemption, specifically to avoid the same failure pattern a third time.
 
 **Genuine limitations round 4 surfaced that are NOT fixed** (documented,
 not patched around, because they're structural to a keyword/regex

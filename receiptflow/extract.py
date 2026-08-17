@@ -62,6 +62,7 @@ SECONDARY_TOTAL_LINE_RE = re.compile(
 )
 SUBTOTAL_WORD_RE = re.compile(r"\bSUB\s*-?\s*TOTAL", re.IGNORECASE)
 TAX_WORD_RE = re.compile(r"\b(SALES\s*TAX|HST|VAT|TAX)\b", re.IGNORECASE)
+TIP_WORD_RE = re.compile(r"\b(TIP|GRATUITY)\b", re.IGNORECASE)
 # lines that are clearly receipt metadata, not a business name -- a store
 # number, phone number, transaction id, or date line can have plenty of
 # alphabetic characters ("Store #895 Tel: (555) 308-1930") and used to
@@ -185,7 +186,16 @@ class HeuristicExtractor:
         if total is not None:
             conf_hits += 1
             total_trusted = True
+            # a tip only ever adds -- if subtotal+tax is known, the grand
+            # total must be at least that much. A grand total LESS than
+            # subtotal+tax means a digit was dropped (OCR corruption) or
+            # this "grand total" doesn't belong to this subtotal/tax pair
+            # at all; either way it must not be trusted on the label alone.
+            if subtotal_amt is not None and tax_amt is not None:
+                if total < (subtotal_amt + tax_amt) - 0.02:
+                    total_trusted = False
         else:
+            has_tip_line = any(TIP_WORD_RE.search(line) for line in lines)
             for line in lines:
                 if SUBTOTAL_WORD_RE.search(line):
                     continue
@@ -214,6 +224,12 @@ class HeuristicExtractor:
                 if subtotal_amt is not None and tax_amt is not None:
                     if abs((subtotal_amt + tax_amt) - total) > 0.02:
                         total_trusted = False
+                # a tip/gratuity line with no GRAND TOTAL anywhere means
+                # this plain TOTAL is the pre-tip figure, not the final
+                # charge -- arithmetic matching subtotal+tax doesn't save
+                # it here, since that's exactly the pre-tip case.
+                if has_tip_line:
+                    total_trusted = False
 
         if total is None:
             amounts = [float(x.replace(",", "")) for x in MONEY_RE.findall(ocr_text)]

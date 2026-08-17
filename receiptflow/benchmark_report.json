@@ -1,6 +1,6 @@
 {
   "documents_processed": 20,
-  "total_wall_time_sec": 4.755,
+  "total_wall_time_sec": 4.766,
   "avg_time_per_doc_sec": 0.238,
   "accuracy": {
     "vendor_exact_or_substring": "20/20 (100%)",

@@ -96,6 +96,26 @@ def test_unlabeled_unrelated_date_does_not_win_over_labeled_purchase_date():
     assert fields.date == "2026-07-15", f"got date={fields.date!r}"
 
 
+def test_grand_total_below_subtotal_plus_tax_is_untrusted():
+    # A tip only ever adds -- a "GRAND TOTAL" that's LESS than
+    # subtotal+tax means a digit was dropped (OCR corruption), not a
+    # legitimate discount. Round 4 exempted GRAND TOTAL from the
+    # arithmetic check entirely (correct for the >= case, a tip), but
+    # that also let an impossible under-total slip through untrusted.
+    ocr = "OAK DINER\n2026-03-14\nSubtotal $50.00\nTax $4.00\nTOTAL $54.00\nTip $10.00\nGRAND TOTAL $6.00\n"
+    fields = extract_fields(ocr)
+    assert fields.total_trusted is False, "a grand total below subtotal+tax must not be trusted"
+
+
+def test_tip_line_without_grand_total_marks_pretip_total_untrusted():
+    # A handwritten/blank tip line with no printed grand total: the only
+    # extractable total is the pre-tip "TOTAL" line, which is not the
+    # final charge. Must not auto-approve on the pre-tip figure.
+    ocr = "OAK DINER\n2026-03-14\nSubtotal $50.00\nTax $4.00\nTOTAL $54.00\nTip ____\n"
+    fields = extract_fields(ocr)
+    assert fields.total_trusted is False, "a pre-tip total with an unresolved tip line must not be trusted"
+
+
 def test_bookkeeper_correction_overrides_generic_default():
     if RULES_PATH.exists():
         RULES_PATH.unlink()

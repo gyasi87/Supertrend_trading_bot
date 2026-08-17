@@ -44,8 +44,8 @@ auto-approved with zero human touch: 70%
 silently-wrong auto-approvals: 0 / 20   <-- the number that actually matters
 ```
 
-**Eight rounds of blind critique found real bugs, all fixed and now
-regression-tested (`test_extraction.py`, 24/24 passing):**
+**Nine rounds of blind critique found real bugs, all fixed and now
+regression-tested (`test_extraction.py`, 29/29 passing):**
 
 1. *Vendor extraction* originally picked whichever of the first lines
    had the most alphabetic characters, so a metadata line ("Store #895
@@ -151,30 +151,52 @@ regression-tested (`test_extraction.py`, 24/24 passing):**
     accepted too broadly or rejected too narrowly, and the fix is safe
     by construction rather than by careful tuning of a gap width.
 
+11. *The round-8 whitelist itself contained a component label.* "TOTAL
+    CHARGES" was hand-added as a "known-good" phrase -- but on a hotel
+    folio ("TOTAL CHARGES $180.00 / Occupancy Tax $22.00 / TOTAL DUE
+    $202.00") it's the pre-tax component the whole whitelist approach
+    exists to reject, reproducing the identical bug with the fix's own
+    added entry. Removed it; the general "letters block the separator"
+    mechanism from round 8 needed no other change to correctly reject it
+    once removed. Also found and fixed: a matched total of exactly
+    $0.00 (a pre-printed remittance stub carrying the same "TOTAL DUE"
+    label as the real total elsewhere on the document) is now marked
+    untrusted on principle -- a real business expense is essentially
+    never for zero dollars, and first-match tiering (needed for the
+    round-3 payment-breakdown fix) has no other way to distinguish a
+    stub from the genuine total. And a lower-severity vendor-selection
+    gap: a document-type header line ("GUEST RECEIPT - HOTEL FOLIO")
+    could be picked as the vendor instead of the real business name on
+    the line below it -- fixed with a short, specific list of known
+    document-type phrases (not a broad ban on words like "hotel," which
+    are legitimately part of many real business names).
+
 The `silently-wrong auto-approvals: 0/20` line is the real claim, and
-each round of adversarial construction against it (twenty constructed
-cases across eight rounds, all now regression tests) has failed to break
-it -- though the auto-approval rate has dropped from 80% to 70% as the
-gates got stricter, which is the honest cost of the guarantee actually
-holding rather than passing by coincidence on one benchmark batch.
+each round of adversarial construction against it (twenty-five
+constructed cases across nine rounds, all now regression tests) has
+failed to break it -- though the auto-approval rate has dropped from 80%
+to 70% as the gates got stricter, which is the honest cost of the
+guarantee actually holding rather than passing by coincidence on one
+benchmark batch.
 
 This project's fix history has a visible pattern worth stating plainly
-rather than hiding: four separate times (rounds 2, 4-5, 6-7, 7-8) a fix
-for one adversarial case was itself too broad or too narrow and needed a
-follow-up correction in the same area -- all four in the total-label
+rather than hiding: five separate times (rounds 2, 4-5, 6-7, 7-8, and
+the whitelist's own round-8-to-9 gap) a fix for one adversarial case was
+itself too broad, too narrow, or contained its own mistake, needing a
+follow-up correction in the same area -- all five in the total-label
 matching logic specifically. That is not a reason to trust the current
 state less than the numbers say -- every follow-up correction was itself
-caught by continuing the same critique process, and all twenty cases
-found across eight rounds are now regression tests that would catch a
-reintroduction. It is a reason to treat "24/24 tests passing today" as a
-snapshot of a safety gate that took real iteration to converge, not one
-that was correct on the first, second, or third attempt. The eighth
-critic round's own assessment was that the underlying approach (a closed
-label whitelist rather than a tunable gap) is a structurally different,
-more defensible fix than the three before it, and recommended treating
-further hand-constructed-receipt-text rounds against this specific logic
-as diminishing returns from here -- with real receipt photos and the
-live LLM fallback as the more valuable next step.
+caught by continuing the same critique process, and all twenty-five
+cases found across nine rounds are now regression tests that would catch
+a reintroduction. It is a reason to treat "29/29 tests passing today" as
+a snapshot of a safety gate that took real, repeated iteration to
+converge -- including one round where the fix that was supposed to be
+the structural, final answer (round 8's whitelist) still shipped with a
+mistake in it -- not a proof that iteration nine is the last one needed.
+Given that history, the honest recommendation is what round 9 itself
+gave: verify this specific area (total-label matching) once more against
+real receipt data before trusting it fully, rather than assuming the
+sandbox critique process has fully exhausted it.
 
 **Genuine limitations round 4 surfaced that are NOT fixed** (documented,
 not patched around, because they're structural to a keyword/regex
@@ -204,6 +226,18 @@ approach rather than one-line bugs):
   hardest.
 - **`vendor_rules.json` is a single global file, not scoped per firm**,
   despite the "per-firm" framing above -- multi-tenancy isn't built yet.
+- **The total-label whitelist is necessarily incomplete.** Round 9 named
+  several mainstream POS/e-commerce labels not on it (`TOTAL (INCL.
+  TAX)` in particular -- parenthetical labels aren't supported by the
+  current regex shape at all). Most of the ones it named (`ORDER TOTAL`,
+  `TOTAL SALE`, `AMOUNT PAID`, `TOTAL USD`, `TOTAL AMOUNT`) have been
+  added since. `NET TOTAL` was deliberately left off: on VAT-based
+  invoicing it commonly names the pre-VAT figure, which is exactly the
+  component-total failure shape this whitelist exists to prevent, so
+  adding it needs more care than a quick addition -- it's left as an
+  open gap rather than guessed at. Missing labels fail toward extra
+  review, not wrong books, but every one directly taxes the real-world
+  auto-approval rate the cost claim depends on.
 
 **On cost:** the fair number is fully-loaded -- compute + the per-call
 cost of the LLM fallback on flagged documents (published Sonnet 5

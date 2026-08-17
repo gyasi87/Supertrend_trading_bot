@@ -98,14 +98,27 @@ _LEADING_DECORATION = r"^[\s*=~\-]*"
 # it isn't, so it correctly doesn't match at all).
 _SEP = r"[\s*=~:.\-]*\$?\s?"
 GRAND_TOTAL_LINE_RE = re.compile(_LEADING_DECORATION + r"(?:GRAND\s*TOTAL)" + _SEP + r"(\d[\d,]*\.\d{2})", re.IGNORECASE)
+# NOTE: "TOTAL CHARGES" was on this whitelist once and had to be removed
+# -- round 9's critic found it reproduced the exact bug this whitelist
+# exists to prevent (a hotel folio's "TOTAL CHARGES $180.00" is a
+# pre-tax component, not the final "TOTAL DUE $202.00"). Adding a new
+# label here later requires checking it can't itself be a sub-total that
+# something else (tax, tip, fees) gets added to afterward -- "CHARGES"
+# in particular is a red flag word for that, not a green light.
 PRIMARY_TOTAL_LINE_RE = re.compile(
     _LEADING_DECORATION
-    + r"(TOTAL\s*AMOUNT\s*DUE|TOTAL\s*DUE|TOTAL\s*PAYABLE|TOTAL\s*BALANCE\s*DUE|TOTAL\s*CHARGES|TOTAL(?!ED))"
+    + r"(TOTAL\s*AMOUNT\s*DUE|TOTAL\s*DUE|TOTAL\s*PAYABLE|TOTAL\s*BALANCE\s*DUE|"
+    # "NET TOTAL" deliberately excluded: on VAT-based invoicing (the
+    # UK/EU market Dext itself serves), "Net Total" commonly names the
+    # PRE-VAT figure, with "VAT" and a separate "Total"/"Gross Total"
+    # following it -- adding it here would reproduce the exact
+    # pre-tax-component bug "TOTAL CHARGES" caused above.
+    r"ORDER\s*TOTAL|TOTAL\s*SALE|TOTAL\s*USD|TOTAL\s*AMOUNT|TOTAL(?!ED))"
     + _SEP + r"(\d[\d,]*\.\d{2})", re.IGNORECASE,
 )
 SECONDARY_TOTAL_LINE_RE = re.compile(
     _LEADING_DECORATION
-    + r"(AMOUNT\s*DUE\s*THIS\s*PERIOD|AMOUNT\s*DUE\s*NOW|AMOUNT\s*DUE|BALANCE\s*DUE|YOU\s*PAID)"
+    + r"(AMOUNT\s*DUE\s*THIS\s*PERIOD|AMOUNT\s*DUE\s*NOW|AMOUNT\s*DUE|BALANCE\s*DUE|YOU\s*PAID|AMOUNT\s*PAID)"
     + _SEP + r"(\d[\d,]*\.\d{2})", re.IGNORECASE,
 )
 SUBTOTAL_WORD_RE = re.compile(r"\bSUB\s*-?\s*TOTAL", re.IGNORECASE)
@@ -126,6 +139,18 @@ METADATA_LINE_START_RE = re.compile(
 # a bare phone number, in contrast, essentially never appears as part of
 # a business's printed name, so this one is fine to match anywhere
 PHONE_NUMBER_RE = re.compile(r"\(\d{3}\)\s*\d{3}[-.]?\d{4}")
+# specific, multi-word document-type headers ("Guest Receipt - Hotel
+# Folio") that a real business name would essentially never coincide
+# with -- unlike METADATA_LINE_START_RE above, these are matched
+# anywhere in the line, not just at the start, since a leading word like
+# "Guest" isn't itself metadata and shouldn't need its own exclusion
+# rule. Deliberately a short, specific phrase list rather than banning
+# generic words like "hotel" or "receipt" outright, since plenty of real
+# businesses are legitimately named "Hotel <something>".
+VENDOR_BOILERPLATE_RE = re.compile(
+    r"guest\s*receipt|hotel\s*folio|sales\s*receipt|cash\s*receipt|customer\s*receipt|tax\s*invoice",
+    re.IGNORECASE,
+)
 
 
 @dataclass
@@ -163,7 +188,7 @@ class HeuristicExtractor:
         # lines are excluded before scoring rather than after.
         vendor = None
         for l in lines[:5]:
-            if METADATA_LINE_START_RE.match(l) or PHONE_NUMBER_RE.search(l):
+            if METADATA_LINE_START_RE.match(l) or PHONE_NUMBER_RE.search(l) or VENDOR_BOILERPLATE_RE.search(l):
                 continue
             letters = sum(c.isalpha() for c in l)
             if letters >= 2:
@@ -286,6 +311,17 @@ class HeuristicExtractor:
                 conf_hits += 0.4  # partial credit toward the *display* confidence score only --
                 # total_trusted stays False, which independently blocks
                 # auto-approval in pipeline.py regardless of this score
+
+        # a matched, labeled total of exactly $0.00 is a red flag rather
+        # than a real answer: a genuine business expense receipt is
+        # essentially never for zero dollars, and $0.00 is the specific
+        # signature of a pre-printed remittance stub or template
+        # placeholder that happens to carry the same "TOTAL DUE" label as
+        # the real total elsewhere on the same document -- first-match
+        # tiering (needed for the round-3 payment-breakdown case) has no
+        # way to distinguish that from the genuine total on its own.
+        if total is not None and total == 0.0:
+            total_trusted = False
 
         confidence = conf_hits / conf_total
         return ExtractedFields(vendor=vendor, date=date, total=total,

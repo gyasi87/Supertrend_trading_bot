@@ -190,6 +190,47 @@ def test_total_savings_line_does_not_beat_real_total():
     assert fields.total == 6.49, f"got total={fields.total!r}"
 
 
+def test_total_charges_component_does_not_beat_total_due():
+    # The whitelist itself had a bug: "TOTAL CHARGES" was hand-added as
+    # a "known-good" label, but it can be exactly the pre-tax component
+    # the whitelist exists to reject (see the comment on
+    # PRIMARY_TOTAL_LINE_RE in extract.py).
+    ocr = "MARRIOTT DOWNTOWN\n2026-03-14\nTOTAL CHARGES 180.00\nOccupancy Tax 22.00\nTOTAL DUE 202.00\n"
+    fields = extract_fields(ocr)
+    assert fields.total == 202.00, f"got total={fields.total!r}"
+
+
+def test_telecom_total_charges_does_not_beat_total_amount_due():
+    ocr = "CITY TELECOM\n2026-03-14\nTOTAL CHARGES 45.00\nTOTAL AMOUNT DUE 50.50\n"
+    fields = extract_fields(ocr)
+    assert fields.total == 50.50, f"got total={fields.total!r}"
+
+
+def test_zero_dollar_total_is_untrusted():
+    # A $0.00 "TOTAL DUE" line (a pre-printed remittance stub or
+    # template placeholder) must not be silently trusted just because it
+    # matched a real label first in reading order -- a genuine business
+    # expense receipt is essentially never for exactly zero dollars.
+    ocr = "ACME SUPPLY CO\nTOTAL DUE 0.00\n2026-03-14\nItems purchased: widgets\nTOTAL DUE 88.40\n"
+    fields = extract_fields(ocr)
+    assert fields.total == 0.0  # first-match tiering still picks it (a known, documented tradeoff)
+    assert fields.total_trusted is False, "a $0.00 total must never be auto-trusted"
+
+
+def test_document_type_header_is_not_selected_as_vendor():
+    ocr = "GUEST RECEIPT - HOTEL FOLIO\nMARRIOTT DOWNTOWN\n2026-03-14\nTOTAL DUE 202.00\n"
+    fields = extract_fields(ocr)
+    assert fields.vendor == "Marriott Downtown", f"got vendor={fields.vendor!r}"
+
+
+def test_order_total_and_amount_paid_labels_recognized():
+    fields = extract_fields("SHOP CO\n2026-03-14\nORDER TOTAL 42.00\n")
+    assert fields.total == 42.00 and fields.total_trusted is True
+
+    fields = extract_fields("SHOP CO\n2026-03-14\nAMOUNT PAID 42.00\n")
+    assert fields.total == 42.00 and fields.total_trusted is True
+
+
 def test_bookkeeper_correction_overrides_generic_default():
     if RULES_PATH.exists():
         RULES_PATH.unlink()

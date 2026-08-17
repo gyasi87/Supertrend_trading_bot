@@ -34,11 +34,24 @@ DATE_PATTERNS = [
     (re.compile(r"\b([A-Z][a-z]{2} \d{1,2}, \d{4})\b"), "%b %d, %Y"),
     (re.compile(r"\b(\d{1,2} [A-Z][a-z]{2} \d{4})\b"), "%d %b %Y"),
 ]
-TOTAL_LINE_RE = re.compile(
-    r"(TOTAL(?!ED)|AMOUNT\s*DUE|GRAND\s*TOTAL|BALANCE\s*DUE|YOU\s*PAID|TOTAL DUE)\s*:?\s*\$?\s?(\d[\d,]*\.\d{2})",
-    re.IGNORECASE,
+# Two priority tiers, not one flat alternation: "TOTAL"/"GRAND TOTAL"/
+# "TOTAL DUE" name the actual purchase amount. "AMOUNT DUE"/"BALANCE
+# DUE"/"YOU PAID" are sometimes the only total-like label on a plain
+# receipt (fine to use), but on a receipt with a payment breakdown
+# (Total, then a payment line, then a remaining Balance Due) they name
+# what's left owed -- not the amount to book as the expense. Treating
+# both tiers as interchangeable and taking "whichever matched last" let
+# "Balance Due $0.00" after a cash payment silently overwrite the real
+# $138.52 total. Primary is checked first and, when present, wins
+# outright regardless of where secondary matches fall.
+PRIMARY_TOTAL_LINE_RE = re.compile(
+    r"(TOTAL(?!ED)|GRAND\s*TOTAL|TOTAL\s*DUE)\s*:?\s*\$?\s?(\d[\d,]*\.\d{2})", re.IGNORECASE,
+)
+SECONDARY_TOTAL_LINE_RE = re.compile(
+    r"(AMOUNT\s*DUE|BALANCE\s*DUE|YOU\s*PAID)\s*:?\s*\$?\s?(\d[\d,]*\.\d{2})", re.IGNORECASE,
 )
 SUBTOTAL_WORD_RE = re.compile(r"\bSUB\s*-?\s*TOTAL", re.IGNORECASE)
+TAX_WORD_RE = re.compile(r"\b(SALES\s*TAX|HST|VAT|TAX)\b", re.IGNORECASE)
 # lines that are clearly receipt metadata, not a business name -- a store
 # number, phone number, transaction id, or date line can have plenty of
 # alphabetic characters ("Store #895 Tel: (555) 308-1930") and used to
@@ -123,22 +136,50 @@ class HeuristicExtractor:
                 except ValueError:
                     continue
 
-        # total: prefer an explicit TOTAL/AMOUNT DUE line, scanning lines
-        # individually and skipping "Subtotal" (which contains "total" as
-        # a substring -- a whole-text regex would grab it by mistake).
-        # The real total line is usually the last such match on a receipt,
-        # since subtotal/tax are listed before the grand total.
+        # total: prefer a PRIMARY explicit-total line ("TOTAL"/"GRAND
+        # TOTAL"/"TOTAL DUE") over a SECONDARY one ("AMOUNT DUE"/"BALANCE
+        # DUE"/"YOU PAID") -- the latter can be the amount left owed after
+        # a partial payment, not the purchase total. Primary: take the
+        # FIRST match (the original total, before any payment-breakdown
+        # lines that follow it). Secondary: only used when no primary
+        # exists anywhere, taking the last match as before.
         total = None
         total_trusted = False
+        subtotal_amt = tax_amt = None
         for line in lines:
             if SUBTOTAL_WORD_RE.search(line):
+                nums = MONEY_RE.findall(line)
+                if nums:
+                    subtotal_amt = float(nums[-1].replace(",", ""))
                 continue
-            m = TOTAL_LINE_RE.search(line)
-            if m:
+            if TAX_WORD_RE.search(line):
+                nums = MONEY_RE.findall(line)
+                if nums:
+                    tax_amt = float(nums[-1].replace(",", ""))
+            m = PRIMARY_TOTAL_LINE_RE.search(line)
+            if m and total is None:
                 total = float(m.group(2).replace(",", ""))
+
+        if total is None:
+            for line in lines:
+                if SUBTOTAL_WORD_RE.search(line):
+                    continue
+                m = SECONDARY_TOTAL_LINE_RE.search(line)
+                if m:
+                    total = float(m.group(2).replace(",", ""))
+
         if total is not None:
             conf_hits += 1
             total_trusted = True
+            # arithmetic cross-check: if subtotal + tax is known and
+            # disagrees with the labeled total by more than a cent, the
+            # label matched but the number itself is suspect (OCR digit
+            # corruption, or a total that doesn't correspond to this
+            # subtotal/tax pair at all) -- don't let a matched label alone
+            # certify a number that fails its own receipt's arithmetic.
+            if subtotal_amt is not None and tax_amt is not None:
+                if abs((subtotal_amt + tax_amt) - total) > 0.02:
+                    total_trusted = False
         else:
             amounts = [float(x.replace(",", "")) for x in MONEY_RE.findall(ocr_text)]
             if amounts:

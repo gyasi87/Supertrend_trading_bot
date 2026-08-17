@@ -1,61 +1,61 @@
 {
   "documents_processed": 20,
-  "total_wall_time_sec": 4.652,
-  "avg_time_per_doc_sec": 0.233,
+  "total_wall_time_sec": 4.604,
+  "avg_time_per_doc_sec": 0.23,
   "accuracy": {
     "vendor_exact_or_substring": "20/20 (100%)",
     "total_amount_exact": "18/20 (90%)",
     "date_exact": "16/20 (80%)",
     "category_correct_on_first_pass": "20/20 (100%)"
   },
-  "auto_approved_no_human_touch": "15/20 (75%)",
-  "routed_to_review_queue": 5,
+  "auto_approved_no_human_touch": "14/20 (70%)",
+  "routed_to_review_queue": 6,
   "cost_per_doc": {
     "compute_only_usd": 0.0004,
-    "llm_fallback_blended_usd": 0.00075,
+    "llm_fallback_blended_usd": 0.0009,
     "dext_published_self_serve_usd": 0.25,
     "fully_loaded_sensitivity_by_rate_and_review_time": {
       "offshore_12usd_hr": {
         "15s_review_per_flagged_doc": {
-          "fully_loaded_cost_per_doc_usd": 0.0137,
-          "vs_dext_cheaper_multiple": 18.32,
+          "fully_loaded_cost_per_doc_usd": 0.0163,
+          "vs_dext_cheaper_multiple": 15.34,
           "beats_dext": true
         },
         "30s_review_per_flagged_doc": {
-          "fully_loaded_cost_per_doc_usd": 0.0261,
-          "vs_dext_cheaper_multiple": 9.56,
+          "fully_loaded_cost_per_doc_usd": 0.0313,
+          "vs_dext_cheaper_multiple": 7.99,
           "beats_dext": true
         },
         "60s_review_per_flagged_doc": {
-          "fully_loaded_cost_per_doc_usd": 0.0512,
-          "vs_dext_cheaper_multiple": 4.89,
+          "fully_loaded_cost_per_doc_usd": 0.0613,
+          "vs_dext_cheaper_multiple": 4.08,
           "beats_dext": true
         },
         "120s_review_per_flagged_doc": {
-          "fully_loaded_cost_per_doc_usd": 0.1012,
-          "vs_dext_cheaper_multiple": 2.47,
+          "fully_loaded_cost_per_doc_usd": 0.1213,
+          "vs_dext_cheaper_multiple": 2.06,
           "beats_dext": true
         }
       },
       "us_based_30usd_hr": {
         "15s_review_per_flagged_doc": {
-          "fully_loaded_cost_per_doc_usd": 0.0324,
-          "vs_dext_cheaper_multiple": 7.72,
+          "fully_loaded_cost_per_doc_usd": 0.0388,
+          "vs_dext_cheaper_multiple": 6.44,
           "beats_dext": true
         },
         "30s_review_per_flagged_doc": {
-          "fully_loaded_cost_per_doc_usd": 0.0636,
-          "vs_dext_cheaper_multiple": 3.93,
+          "fully_loaded_cost_per_doc_usd": 0.0763,
+          "vs_dext_cheaper_multiple": 3.28,
           "beats_dext": true
         },
         "60s_review_per_flagged_doc": {
-          "fully_loaded_cost_per_doc_usd": 0.1262,
-          "vs_dext_cheaper_multiple": 1.98,
+          "fully_loaded_cost_per_doc_usd": 0.1513,
+          "vs_dext_cheaper_multiple": 1.65,
           "beats_dext": true
         },
         "120s_review_per_flagged_doc": {
-          "fully_loaded_cost_per_doc_usd": 0.2511,
-          "vs_dext_cheaper_multiple": 1.0,
+          "fully_loaded_cost_per_doc_usd": 0.3013,
+          "vs_dext_cheaper_multiple": 0.83,
           "beats_dext": false
         }
       }

@@ -12,7 +12,7 @@
     "category_confidence": 0.9,
     "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.221
+    "elapsed_sec": 0.227
   },
   {
     "id": "receipt_02",
@@ -27,7 +27,7 @@
     "category_confidence": 0.9,
     "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.196
+    "elapsed_sec": 0.198
   },
   {
     "id": "receipt_03",
@@ -42,7 +42,7 @@
     "category_confidence": 0.9,
     "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.226
+    "elapsed_sec": 0.229
   },
   {
     "id": "receipt_04",
@@ -57,7 +57,7 @@
     "category_confidence": 0.9,
     "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.378
+    "elapsed_sec": 0.355
   },
   {
     "id": "receipt_05",
@@ -72,7 +72,7 @@
     "category_confidence": 0.9,
     "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.203
+    "elapsed_sec": 0.212
   },
   {
     "id": "receipt_06",
@@ -87,7 +87,7 @@
     "category_confidence": 0.9,
     "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.18
+    "elapsed_sec": 0.187
   },
   {
     "id": "receipt_07",
@@ -102,7 +102,7 @@
     "category_confidence": 0.9,
     "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.214
+    "elapsed_sec": 0.21
   },
   {
     "id": "receipt_08",
@@ -117,7 +117,7 @@
     "category_confidence": 0.9,
     "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.203
+    "elapsed_sec": 0.222
   },
   {
     "id": "receipt_09",
@@ -132,7 +132,7 @@
     "category_confidence": 0.9,
     "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.181
+    "elapsed_sec": 0.179
   },
   {
     "id": "receipt_10",
@@ -147,7 +147,7 @@
     "category_confidence": 0.9,
     "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.172
+    "elapsed_sec": 0.175
   },
   {
     "id": "receipt_11",
@@ -162,7 +162,7 @@
     "category_confidence": 0.9,
     "total_trusted": true,
     "status": "needs_review",
-    "elapsed_sec": 0.198
+    "elapsed_sec": 0.192
   },
   {
     "id": "receipt_12",
@@ -177,7 +177,7 @@
     "category_confidence": 0.9,
     "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.222
+    "elapsed_sec": 0.229
   },
   {
     "id": "receipt_13",
@@ -192,7 +192,7 @@
     "category_confidence": 0.9,
     "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.245
+    "elapsed_sec": 0.241
   },
   {
     "id": "receipt_14",
@@ -207,7 +207,7 @@
     "category_confidence": 0.9,
     "total_trusted": false,
     "status": "needs_review",
-    "elapsed_sec": 0.195
+    "elapsed_sec": 0.179
   },
   {
     "id": "receipt_15",
@@ -220,9 +220,9 @@
     "extract_method": "heuristic",
     "category": "Supplies & Materials",
     "category_confidence": 0.9,
-    "total_trusted": true,
-    "status": "auto_approved",
-    "elapsed_sec": 0.2
+    "total_trusted": false,
+    "status": "needs_review",
+    "elapsed_sec": 0.204
   },
   {
     "id": "receipt_16",
@@ -237,7 +237,7 @@
     "category_confidence": 0.9,
     "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.179
+    "elapsed_sec": 0.177
   },
   {
     "id": "receipt_17",
@@ -252,7 +252,7 @@
     "category_confidence": 0.9,
     "total_trusted": false,
     "status": "needs_review",
-    "elapsed_sec": 0.208
+    "elapsed_sec": 0.184
   },
   {
     "id": "receipt_18",
@@ -267,7 +267,7 @@
     "category_confidence": 0.9,
     "total_trusted": true,
     "status": "needs_review",
-    "elapsed_sec": 0.226
+    "elapsed_sec": 0.215
   },
   {
     "id": "receipt_19",
@@ -282,7 +282,7 @@
     "category_confidence": 0.9,
     "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.396
+    "elapsed_sec": 0.382
   },
   {
     "id": "receipt_20",
@@ -297,6 +297,6 @@
     "category_confidence": 0.9,
     "total_trusted": false,
     "status": "needs_review",
-    "elapsed_sec": 0.408
+    "elapsed_sec": 0.406
   }
 ]

@@ -7,11 +7,16 @@ firm needs is books-ready output mapped to *their* chart of accounts and
 *their* client's historical categorization pattern -- not a generic
 "receipts" bucket that still needs a human to re-sort at month end.
 
-vendor_rules.json holds a per-firm keyword -> QBO category map. Every time
-a bookkeeper corrects a category in the review UI, the correction is
-written back into the rules file (see app.py:/accept), so the mapping
-gets more accurate the more the firm uses it -- a cold-start problem Dext
-does not solve, because Dext's categories are generic, not firm-specific.
+vendor_rules.json holds two tiers: built-in DEFAULT_RULES keyword matches,
+and a per-firm "learned" map written every time a bookkeeper corrects a
+category in the review UI (see app.py:/accept). Learned entries always
+outrank defaults, regardless of keyword length -- an earlier version
+picked the longest matching keyword across both tiers combined, which
+meant a correction like "shell cafe" -> Meals & Entertainment could lose
+to the built-in "ups store" (longer, in a different tier entirely) after
+key-shortening logic trimmed the learned key down. Keeping the tiers
+separate and always checking learned first removes that failure mode at
+the root instead of tuning the key-shortening heuristic further.
 """
 import json
 from pathlib import Path
@@ -37,11 +42,21 @@ DEFAULT_RULES = {
 }
 
 
-def _load_rules() -> dict:
+def _load_store() -> dict:
     if RULES_PATH.exists():
-        return json.loads(RULES_PATH.read_text())
-    RULES_PATH.write_text(json.dumps(DEFAULT_RULES, indent=2))
-    return dict(DEFAULT_RULES)
+        data = json.loads(RULES_PATH.read_text())
+        if "defaults" in data and "learned" in data:
+            return data
+    store = {"defaults": dict(DEFAULT_RULES), "learned": {}}
+    RULES_PATH.write_text(json.dumps(store, indent=2))
+    return store
+
+
+def _longest_match(v: str, rules: dict):
+    matches = [(keyword, category) for keyword, category in rules.items() if keyword in v]
+    if not matches:
+        return None
+    return max(matches, key=lambda kc: len(kc[0]))
 
 
 def categorize(vendor: str) -> tuple[str, float]:
@@ -50,29 +65,30 @@ def categorize(vendor: str) -> tuple[str, float]:
     silently mis-booking it."""
     if not vendor:
         return "Uncategorized", 0.0
-    rules = _load_rules()
+    store = _load_store()
     v = vendor.lower()
-    # match the LONGEST (most specific) matching keyword, not whichever
-    # happens to come first by insertion order -- otherwise a bookkeeper
-    # correction like "shell cafe" -> Meals & Entertainment can never
-    # override the generic default "shell" -> Vehicle & Fuel, since dict
-    # iteration order put the shorter, earlier-inserted default first.
-    # This is what makes learn() below actually take effect.
-    matches = [(keyword, category) for keyword, category in rules.items() if keyword in v]
-    if matches:
-        keyword, category = max(matches, key=lambda kc: len(kc[0]))
-        return category, 0.9
+
+    learned_match = _longest_match(v, store["learned"])
+    if learned_match:
+        return learned_match[1], 0.9
+
+    default_match = _longest_match(v, store["defaults"])
+    if default_match:
+        return default_match[1], 0.9
+
     return "Uncategorized", 0.0
 
 
 def learn(vendor: str, category: str) -> None:
     """Called from the review UI when a bookkeeper corrects/confirms a
-    category -- persists the firm-specific mapping for next time."""
+    category -- persists the firm-specific mapping for next time. Stored
+    in a separate "learned" tier that categorize() always checks first,
+    so this correction can never lose to a generic default no matter how
+    the vendor string gets normalized."""
     if not vendor or not category:
         return
-    rules = _load_rules()
+    store = _load_store()
     key = vendor.lower().split(" #")[0].split(" store")[0].strip()
-    # keep keys short and generic enough to match future variants
     key = " ".join(key.split()[:2]) if len(key.split()) > 2 else key
-    rules[key] = category
-    RULES_PATH.write_text(json.dumps(rules, indent=2))
+    store["learned"][key] = category
+    RULES_PATH.write_text(json.dumps(store, indent=2))

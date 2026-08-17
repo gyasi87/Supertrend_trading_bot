@@ -41,6 +41,40 @@ def test_explicit_total_line_is_trusted():
     assert fields.total_trusted is True
 
 
+def test_balance_due_after_payment_does_not_override_real_total():
+    # A payment-breakdown receipt: the real purchase total is $138.52,
+    # but a "Balance Due $0.00" line follows because it was paid in cash.
+    # The old "whichever total-like line matched last" logic would book
+    # $0.00 for a $138.52 expense.
+    ocr = "ACE HARDWARE\n2026-03-14\nTOTAL $138.52\nPAID CASH $140.00\nBALANCE DUE $0.00\n"
+    fields = extract_fields(ocr)
+    assert fields.total == 138.52, f"got total={fields.total!r}"
+    assert fields.total_trusted is True
+
+
+def test_gift_card_amount_due_does_not_override_total():
+    ocr = "COSTCO\n2026-03-14\nTOTAL $412.00\nGIFT CARD -$400.00\nAMOUNT DUE $12.00\n"
+    fields = extract_fields(ocr)
+    assert fields.total == 412.00, f"got total={fields.total!r}"
+
+
+def test_arithmetic_mismatch_marks_total_untrusted():
+    # subtotal + tax = 454.68, but the labeled total is 45.68 -- an OCR
+    # digit drop. The label matched, but the number fails its own
+    # receipt's arithmetic and must not be auto-approved on label match
+    # alone.
+    ocr = "STAPLES\n2026-03-14\nSubtotal $421.00\nTax $33.68\nTOTAL $45.68\n"
+    fields = extract_fields(ocr)
+    assert fields.total_trusted is False, "an arithmetic mismatch must mark the total untrusted"
+
+
+def test_arithmetic_match_stays_trusted():
+    ocr = "STAPLES\n2026-03-14\nSubtotal $421.00\nTax $33.68\nTOTAL $454.68\n"
+    fields = extract_fields(ocr)
+    assert fields.total == 454.68
+    assert fields.total_trusted is True
+
+
 def test_bookkeeper_correction_overrides_generic_default():
     if RULES_PATH.exists():
         RULES_PATH.unlink()
@@ -52,6 +86,25 @@ def test_bookkeeper_correction_overrides_generic_default():
     assert category == "Meals & Entertainment", (
         "a specific bookkeeper correction must beat the shorter generic default -- "
         f"got {category!r}"
+    )
+    RULES_PATH.unlink()
+
+
+def test_correction_on_vendor_matching_a_longer_default_still_takes():
+    # "The UPS Store #1234" normalizes (via learn()'s key-shortening) to
+    # "the ups" -- a SHORTER key than the built-in default "ups store".
+    # Tiered storage (learned checked before defaults) must make the
+    # correction win regardless, since length-based tiebreaking across a
+    # combined map would let the longer default win instead.
+    if RULES_PATH.exists():
+        RULES_PATH.unlink()
+    category, _ = categorize("The UPS Store #1234")
+    assert category == "Shipping & Postage"  # built-in default
+
+    learn("The UPS Store #1234", "Office Supplies")
+    category, _ = categorize("The UPS Store #1234")
+    assert category == "Office Supplies", (
+        f"correction on a vendor matching a longer default must still win -- got {category!r}"
     )
     RULES_PATH.unlink()
 

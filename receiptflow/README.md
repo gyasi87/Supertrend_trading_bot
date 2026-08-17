@@ -44,8 +44,8 @@ auto-approved with zero human touch: 70%
 silently-wrong auto-approvals: 0 / 20   <-- the number that actually matters
 ```
 
-**Five rounds of blind critique found real bugs, all fixed and now
-regression-tested (`test_extraction.py`, 14/14 passing):**
+**Six rounds of blind critique found real bugs, all fixed and now
+regression-tested (`test_extraction.py`, 17/17 passing):**
 
 1. *Vendor extraction* originally picked whichever of the first lines
    had the most alphabetic characters, so a metadata line ("Store #895
@@ -105,17 +105,33 @@ regression-tested (`test_extraction.py`, 14/14 passing):**
    the pre-tip total as if it were final -- now marked untrusted
    whenever a tip line exists without a resolvable grand total.
 
+8. *Round 6: an unanchored "TOTAL" substring match let component/section
+   totals beat the document's real total.* "Room Total $180.00" on a
+   hotel folio, or "Food Total $40.00" on an itemized restaurant check,
+   matched the same regex as "TOTAL DUE $210.00" / "TOTAL $54.00" --
+   and being first in reading order, the component total won. This is
+   the same failure shape as the round-1/2 vendor-metadata bug (an
+   unanchored match beating a qualified one), applied to the total
+   field: hotel folios and itemized checks are a real, high-volume
+   document class in travel and meals expenses, not an edge case. Fixed
+   by anchoring all three total-line tiers to the start of the line --
+   "TOTAL DUE" starts with the label, "Room Total" does not.
+
 The `silently-wrong auto-approvals: 0/20` line is the real claim, and
-each round of adversarial construction against it (ten constructed
-cases across five rounds, all now regression tests) has failed to break
+each round of adversarial construction against it (thirteen constructed
+cases across six rounds, all now regression tests) has failed to break
 it -- though the auto-approval rate has dropped from 80% to 70% as the
 gates got stricter, which is the honest cost of the guarantee actually
 holding rather than passing by coincidence on one benchmark batch. Note
 that rounds 4 and 5 form a pair worth being candid about: round 4's fix
 for the tip-laundering bug (exempting GRAND TOTAL from arithmetic
-checking) itself introduced the gap round 5 found. The fix this time is
-a narrower, one-directional constraint rather than another blanket
-exemption, specifically to avoid the same failure pattern a third time.
+checking) itself introduced the gap round 5 found. Round 5's fix was a
+narrower, one-directional constraint rather than another blanket
+exemption, specifically to avoid the same failure pattern a third time
+-- and round 6 found a different bug entirely (an anchoring gap, not a
+gap in the arithmetic logic), which is a reasonable signal that the
+fixes are converging on distinct failure classes rather than chasing
+the same one in circles.
 
 **Genuine limitations round 4 surfaced that are NOT fixed** (documented,
 not patched around, because they're structural to a keyword/regex

@@ -116,6 +116,27 @@ def test_tip_line_without_grand_total_marks_pretip_total_untrusted():
     assert fields.total_trusted is False, "a pre-tip total with an unresolved tip line must not be trusted"
 
 
+def test_hotel_folio_room_total_does_not_beat_total_due():
+    ocr = "MARRIOTT DOWNTOWN\n2026-03-14\nRoom Total $180.00\nOccupancy Tax $30.00\nTOTAL DUE $210.00\n"
+    fields = extract_fields(ocr)
+    assert fields.total == 210.00, f"got total={fields.total!r}, must be TOTAL DUE, not the component Room Total"
+
+
+def test_itemized_check_section_total_does_not_beat_grand_total():
+    ocr = "OAK DINER\n2026-03-14\nFood Total $40.00\nBar Total $14.00\nTOTAL $54.00\n"
+    fields = extract_fields(ocr)
+    assert fields.total == 54.00, f"got total={fields.total!r}, must be the receipt's TOTAL, not a section subtotal"
+
+
+def test_qualifier_prefixed_total_line_is_not_matched_as_primary():
+    # No anchored TOTAL/TOTAL DUE line exists at all here -- only a
+    # component "Line Total". Must NOT be picked up as a trusted primary
+    # total; falling through to the untrusted guess path is correct.
+    ocr = "SOME VENDOR\n2026-03-14\nItem A Line Total $12.00\nItem B Line Total $8.00\n"
+    fields = extract_fields(ocr)
+    assert fields.total_trusted is False, "an unanchored component total must not be trusted as the document total"
+
+
 def test_bookkeeper_correction_overrides_generic_default():
     if RULES_PATH.exists():
         RULES_PATH.unlink()

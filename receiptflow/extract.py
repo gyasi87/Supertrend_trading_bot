@@ -53,12 +53,23 @@ DATE_PATTERNS = [
 # instead of catching it. A grand total legitimately does not have to
 # equal subtotal+tax (that's exactly what a tip is), so it is trusted on
 # its own without that cross-check once found.
-GRAND_TOTAL_LINE_RE = re.compile(r"GRAND\s*TOTAL\s*:?\s*\$?\s?(\d[\d,]*\.\d{2})", re.IGNORECASE)
+# All three tiers are anchored to the START of the line (allowing only
+# leading whitespace). An unanchored "TOTAL" substring search matches a
+# *component* total just as happily as the document's real total --
+# "Room Total $180.00" on a hotel folio, "Food Total $40.00" on an
+# itemized restaurant check, a per-line-item "Total" column on an
+# invoice -- and being first in reading order, a qualifier-prefixed
+# component total would win over the real "TOTAL DUE" line that follows
+# it. This is the same failure shape as the earlier vendor-metadata bug
+# (an unanchored match beats a qualified one) applied to a new field --
+# anchoring is the fix there too: "TOTAL DUE $210.00" starts with the
+# label, "Room Total $180.00" does not.
+GRAND_TOTAL_LINE_RE = re.compile(r"^\s*GRAND\s*TOTAL\s*:?\s*\$?\s?(\d[\d,]*\.\d{2})", re.IGNORECASE)
 PRIMARY_TOTAL_LINE_RE = re.compile(
-    r"(TOTAL(?!ED)|TOTAL\s*DUE)\s*:?\s*\$?\s?(\d[\d,]*\.\d{2})", re.IGNORECASE,
+    r"^\s*(TOTAL(?!ED)|TOTAL\s*DUE)\s*:?\s*\$?\s?(\d[\d,]*\.\d{2})", re.IGNORECASE,
 )
 SECONDARY_TOTAL_LINE_RE = re.compile(
-    r"(AMOUNT\s*DUE|BALANCE\s*DUE|YOU\s*PAID)\s*:?\s*\$?\s?(\d[\d,]*\.\d{2})", re.IGNORECASE,
+    r"^\s*(AMOUNT\s*DUE|BALANCE\s*DUE|YOU\s*PAID)\s*:?\s*\$?\s?(\d[\d,]*\.\d{2})", re.IGNORECASE,
 )
 SUBTOTAL_WORD_RE = re.compile(r"\bSUB\s*-?\s*TOTAL", re.IGNORECASE)
 TAX_WORD_RE = re.compile(r"\b(SALES\s*TAX|HST|VAT|TAX)\b", re.IGNORECASE)

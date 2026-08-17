@@ -162,6 +162,34 @@ def test_thermal_printer_decoration_around_total_label_still_matches():
     assert fields.total_trusted is True
 
 
+def test_telecom_bill_monthly_charges_does_not_beat_amount_due():
+    # Round 7's fix (a generic `.*?` gap) let this line's "TOTAL" match
+    # win outright, because a wildcard gap can't distinguish a
+    # legitimate continuation ("AMOUNT DUE") from a disqualifying one
+    # ("MONTHLY CHARGES", a component of the bill, not the whole).
+    ocr = "CITY TELECOM\n2026-03-14\nTOTAL MONTHLY CHARGES 45.00\nTOTAL AMOUNT DUE 50.50\n"
+    fields = extract_fields(ocr)
+    assert fields.total == 50.50, f"got total={fields.total!r}"
+
+
+def test_hotel_folio_total_room_charges_does_not_beat_total_due():
+    ocr = "MARRIOTT DOWNTOWN\n2026-03-14\nTOTAL ROOM CHARGES 180.00\nTOTAL DUE 202.00\n"
+    fields = extract_fields(ocr)
+    assert fields.total == 202.00, f"got total={fields.total!r}"
+
+
+def test_itemized_food_beverage_totals_do_not_beat_total_due():
+    ocr = "OAK DINER\n2026-03-14\nTOTAL FOOD 12.00\nTOTAL BEVERAGE 4.00\nTOTAL DUE 17.28\n"
+    fields = extract_fields(ocr)
+    assert fields.total == 17.28, f"got total={fields.total!r}"
+
+
+def test_total_savings_line_does_not_beat_real_total():
+    ocr = "SUPERMART\n2026-03-14\nTOTAL SAVINGS 4.50\nTOTAL 6.49\n"
+    fields = extract_fields(ocr)
+    assert fields.total == 6.49, f"got total={fields.total!r}"
+
+
 def test_bookkeeper_correction_overrides_generic_default():
     if RULES_PATH.exists():
         RULES_PATH.unlink()

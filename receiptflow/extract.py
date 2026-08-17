@@ -70,20 +70,43 @@ DATE_PATTERNS = [
 # real labels as it fixed: "TOTAL AMOUNT DUE: $138.52" (a canonical
 # invoice/utility-bill label) or "AMOUNT DUE THIS PERIOD: $54.00" no
 # longer matched anything, since a qualifier word sits between the label
-# and the amount, not just punctuation. The fix isn't "label touches the
-# amount", it's "the LINE starts with the label" -- qualifier text is
-# free to sit between the label and the amount, as long as nothing but
-# whitespace/decoration precedes the label itself. `.*?` (lazy) between
-# the label and the first captured amount allows that without reopening
-# the component-total bug, since "Room"/"Food" still aren't decoration
-# characters and still fail the leading anchor.
+# and the amount, not just punctuation. The follow-up fix loosened the
+# gap to a generic `.*?` (any characters) before the amount -- which
+# over-corrected the other way: "TOTAL MONTHLY CHARGES 45.00" and "TOTAL
+# ROOM CHARGES 180.00" then matched too, treating a component/scoped
+# total exactly like the earlier "Room Total" bug this whole anchoring
+# effort started from, just with the disqualifying word trailing the
+# label instead of leading it.
+#
+# Two point-fixes in the same direction both failed because "how much
+# text is allowed between the label and the amount" isn't answerable
+# with a single generic wildcard OR a single strict adjacency rule --
+# some continuations are legitimate (AMOUNT DUE, THIS PERIOD) and some
+# are disqualifying (MONTHLY CHARGES, ROOM, FOOD), and a regex has no
+# way to tell those apart by shape alone. The fix is a closed, explicit
+# list of known-good compound labels (matched as fixed phrases) instead
+# of a wildcard gap -- unlisted continuations no longer match at all,
+# which is safe by construction: an unrecognized label falls through to
+# the untrusted guess path rather than being silently accepted either
+# too broadly or too narrowly.
 _LEADING_DECORATION = r"^[\s*=~\-]*"
-GRAND_TOTAL_LINE_RE = re.compile(_LEADING_DECORATION + r"GRAND\s*TOTAL\b.*?(\d[\d,]*\.\d{2})", re.IGNORECASE)
+# separator between a matched label and the amount: punctuation and
+# whitespace only, never letters -- this is what actually distinguishes
+# "TOTAL AMOUNT DUE: $138.52" (colon+space, fine) from "TOTAL MONTHLY
+# CHARGES 45.00" (the letters "MONTHLY" are not a separator, so that
+# input can only match if "MONTHLY" is itself part of a listed phrase --
+# it isn't, so it correctly doesn't match at all).
+_SEP = r"[\s*=~:.\-]*\$?\s?"
+GRAND_TOTAL_LINE_RE = re.compile(_LEADING_DECORATION + r"(?:GRAND\s*TOTAL)" + _SEP + r"(\d[\d,]*\.\d{2})", re.IGNORECASE)
 PRIMARY_TOTAL_LINE_RE = re.compile(
-    _LEADING_DECORATION + r"(TOTAL(?!ED)|TOTAL\s*DUE)\b.*?(\d[\d,]*\.\d{2})", re.IGNORECASE,
+    _LEADING_DECORATION
+    + r"(TOTAL\s*AMOUNT\s*DUE|TOTAL\s*DUE|TOTAL\s*PAYABLE|TOTAL\s*BALANCE\s*DUE|TOTAL\s*CHARGES|TOTAL(?!ED))"
+    + _SEP + r"(\d[\d,]*\.\d{2})", re.IGNORECASE,
 )
 SECONDARY_TOTAL_LINE_RE = re.compile(
-    _LEADING_DECORATION + r"(AMOUNT\s*DUE|BALANCE\s*DUE|YOU\s*PAID)\b.*?(\d[\d,]*\.\d{2})", re.IGNORECASE,
+    _LEADING_DECORATION
+    + r"(AMOUNT\s*DUE\s*THIS\s*PERIOD|AMOUNT\s*DUE\s*NOW|AMOUNT\s*DUE|BALANCE\s*DUE|YOU\s*PAID)"
+    + _SEP + r"(\d[\d,]*\.\d{2})", re.IGNORECASE,
 )
 SUBTOTAL_WORD_RE = re.compile(r"\bSUB\s*-?\s*TOTAL", re.IGNORECASE)
 TAX_WORD_RE = re.compile(r"\b(SALES\s*TAX|HST|VAT|TAX)\b", re.IGNORECASE)

@@ -44,8 +44,8 @@ auto-approved with zero human touch: 70%
 silently-wrong auto-approvals: 0 / 20   <-- the number that actually matters
 ```
 
-**Seven rounds of blind critique found real bugs, all fixed and now
-regression-tested (`test_extraction.py`, 20/20 passing):**
+**Eight rounds of blind critique found real bugs, all fixed and now
+regression-tested (`test_extraction.py`, 24/24 passing):**
 
 1. *Vendor extraction* originally picked whichever of the first lines
    had the most alphabetic characters, so a metadata line ("Store #895
@@ -131,28 +131,50 @@ regression-tested (`test_extraction.py`, 20/20 passing):**
    protection is preserved; only its unintentionally narrow adjacency
    requirement was loosened.
 
+10. *Round 7's fix (a generic wildcard gap between the label and the
+    amount) over-corrected in the opposite direction from round 6.*
+    "TOTAL MONTHLY CHARGES 45.00", "TOTAL ROOM CHARGES 180.00", "TOTAL
+    FOOD 12.00", and "TOTAL SAVINGS 4.50" all matched and could win over
+    the real total, because a wildcard gap has no way to distinguish a
+    legitimate continuation ("AMOUNT DUE") from a disqualifying one
+    ("MONTHLY CHARGES") -- it was the round-6 bug again, just with the
+    disqualifying word trailing the label instead of leading it. Two
+    point-fixes in the same direction (stricter, then looser) both broke
+    something, which is a sign the underlying approach -- "how much text
+    can sit between the label and the amount" answered with a single
+    wildcard-vs-adjacency knob -- was the wrong shape for the problem.
+    Replaced with a closed, explicit list of known-good compound labels
+    ("TOTAL AMOUNT DUE", "AMOUNT DUE THIS PERIOD", etc.) matched as
+    fixed phrases, with only punctuation/whitespace allowed as a
+    separator before the amount -- never letters. An unrecognized label
+    now falls through to the untrusted guess path instead of being
+    accepted too broadly or rejected too narrowly, and the fix is safe
+    by construction rather than by careful tuning of a gap width.
+
 The `silently-wrong auto-approvals: 0/20` line is the real claim, and
-each round of adversarial construction against it (sixteen constructed
-cases across seven rounds, all now regression tests) has failed to break
+each round of adversarial construction against it (twenty constructed
+cases across eight rounds, all now regression tests) has failed to break
 it -- though the auto-approval rate has dropped from 80% to 70% as the
 gates got stricter, which is the honest cost of the guarantee actually
 holding rather than passing by coincidence on one benchmark batch.
 
 This project's fix history has a visible pattern worth stating plainly
-rather than hiding: three separate times (rounds 2, 4→5, 6→7) a fix for
-one adversarial case was itself too broad or too narrow and needed a
-follow-up correction in the same area. That is not a reason to trust the
-current state less than the numbers say -- every one of those follow-up
-corrections was itself caught by continuing the same critique process,
-and all sixteen cases found across seven rounds are now regression
-tests that would catch a reintroduction. It is a reason to treat "20/20
-tests passing today" as a snapshot of a still-maturing safety gate, not
-a proof of completeness -- the seventh critic round's own recommendation
-was that further rounds of this specific exercise (hand-constructing
-receipt text against the total-extraction regexes) have reached
-diminishing returns, and that the more valuable next step is external:
-real receipt photos and the live LLM fallback, not another round of
-sandbox-constructed adversarial text.
+rather than hiding: four separate times (rounds 2, 4-5, 6-7, 7-8) a fix
+for one adversarial case was itself too broad or too narrow and needed a
+follow-up correction in the same area -- all four in the total-label
+matching logic specifically. That is not a reason to trust the current
+state less than the numbers say -- every follow-up correction was itself
+caught by continuing the same critique process, and all twenty cases
+found across eight rounds are now regression tests that would catch a
+reintroduction. It is a reason to treat "24/24 tests passing today" as a
+snapshot of a safety gate that took real iteration to converge, not one
+that was correct on the first, second, or third attempt. The eighth
+critic round's own assessment was that the underlying approach (a closed
+label whitelist rather than a tunable gap) is a structurally different,
+more defensible fix than the three before it, and recommended treating
+further hand-constructed-receipt-text rounds against this specific logic
+as diminishing returns from here -- with real receipt photos and the
+live LLM fallback as the more valuable next step.
 
 **Genuine limitations round 4 surfaced that are NOT fixed** (documented,
 not patched around, because they're structural to a keyword/regex

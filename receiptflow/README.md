@@ -44,8 +44,8 @@ auto-approved with zero human touch: 70%
 silently-wrong auto-approvals: 0 / 20   <-- the number that actually matters
 ```
 
-**Three rounds of blind critique found real bugs, all fixed and now
-regression-tested (`test_extraction.py`, 10/10 passing):**
+**Four rounds of blind critique found real bugs, all fixed and now
+regression-tested (`test_extraction.py`, 12/12 passing):**
 
 1. *Vendor extraction* originally picked whichever of the first lines
    had the most alphabetic characters, so a metadata line ("Store #895
@@ -75,13 +75,59 @@ regression-tested (`test_extraction.py`, 10/10 passing):**
    it was supposed to win. Fixed by storing corrections in a separate
    tier that's always checked before defaults, instead of relying on
    keyword length across a combined map.
+5. *A tip added after the pre-tip total defeated the round-3 arithmetic
+   check -- and the check actively certified the wrong number.*
+   Subtotal+tax legitimately equals the pre-tip "TOTAL" line (that's
+   what a tip is), so a receipt with "TOTAL $54.00 ... Tip $10.00 ...
+   GRAND TOTAL $64.00" had its arithmetic check "confirm" the $54.00 as
+   correct when the real charge was $64.00. Fixed by giving "GRAND
+   TOTAL" its own top-priority tier, trusted without the arithmetic
+   check (a tip is exactly why it won't match subtotal+tax). This is the
+   most consequential fix so far -- meals are the highest-volume expense
+   category in bookkeeping, and this was a silent, systematic
+   undercharge on tipped ones.
+6. *An unrelated in-range date (a return-policy deadline) could beat the
+   real purchase date* just by matching a date pattern first in reading
+   order. Fixed by searching lines that carry a "date" label first, then
+   lines near the receipt header (where a purchase date conventionally
+   sits even unlabeled), and only trusting a date found elsewhere in the
+   text with reduced confidence.
 
 The `silently-wrong auto-approvals: 0/20` line is the real claim, and
-each round of adversarial construction against it (six constructed cases
-across three rounds, all now regression tests) has failed to break it --
-though the auto-approval rate has dropped from 80% to 70% as the gates
-got stricter, which is the honest cost of the guarantee actually holding
-rather than passing by coincidence on one benchmark batch.
+each round of adversarial construction against it (eight constructed
+cases across four rounds, all now regression tests) has failed to break
+it -- though the auto-approval rate has dropped from 80% to 70% as the
+gates got stricter, which is the honest cost of the guarantee actually
+holding rather than passing by coincidence on one benchmark batch.
+
+**Genuine limitations round 4 surfaced that are NOT fixed** (documented,
+not patched around, because they're structural to a keyword/regex
+approach rather than one-line bugs):
+- **Category matching has no concept of vendor identity, only
+  substrings.** "Depot Restaurant Equipment Co" (a B2B supplier) matches
+  the keyword "restaurant" and gets categorized as a meal. A learned
+  correction on "The UPS Store" can similarly bleed into an unrelated
+  vendor sharing a short substring. This is a real, currently-open
+  false-positive source for the categorization side (not the
+  auto-approval safety gate -- a wrong category still ships if
+  confidence is high, since category confidence is presently a flat 0.9
+  for any keyword hit, not scaled by match specificity).
+- **The subtotal+tax arithmetic check only helps when both numbers
+  survive OCR.** If the tax line is dropped or misread, there's nothing
+  to cross-check against, and a labeled total is trusted on the label
+  alone -- the check is a best-effort catch, not a guarantee, and its
+  coverage is only as good as what the OCR actually recovers.
+- **Coupons, VAT-inclusive pricing, and multi-jurisdiction tax lines
+  can trip the arithmetic check into false positives** (routing a
+  correct total to review because it doesn't equal a simple
+  subtotal+tax sum). This doesn't corrupt the books -- it fails safe
+  into the review queue -- but it does mean the real-world review rate
+  on receipts with these patterns will run higher than this benchmark's
+  30%, which directly increases the fully-loaded cost. Dext's home
+  market (UK/EU, VAT-inclusive by default) is exactly where this bites
+  hardest.
+- **`vendor_rules.json` is a single global file, not scoped per firm**,
+  despite the "per-firm" framing above -- multi-tenancy isn't built yet.
 
 **On cost:** the fair number is fully-loaded -- compute + the per-call
 cost of the LLM fallback on flagged documents (published Sonnet 5

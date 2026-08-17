@@ -75,6 +75,27 @@ def test_arithmetic_match_stays_trusted():
     assert fields.total_trusted is True
 
 
+def test_tip_after_pretip_total_is_not_laundered_by_arithmetic_check():
+    # Subtotal + tax legitimately equals the PRE-tip total ($54.00) --
+    # that's not an error, it's what a tip is. Taking the first
+    # "TOTAL"-labeled line and having the arithmetic check "confirm" it
+    # actively certified the wrong (pre-tip) amount as trusted. The real
+    # charge is the GRAND TOTAL after the tip.
+    ocr = "OAK DINER\n2026-03-14\nSubtotal $50.00\nTax $4.00\nTOTAL $54.00\nTip $10.00\nGRAND TOTAL $64.00\n"
+    fields = extract_fields(ocr)
+    assert fields.total == 64.00, f"got total={fields.total!r}, must be the post-tip grand total"
+    assert fields.total_trusted is True
+
+
+def test_unlabeled_unrelated_date_does_not_win_over_labeled_purchase_date():
+    # "Return by 2026-09-30" is a policy deadline, not the purchase date
+    # -- it must not win just because it's a valid, in-range, ISO-shaped
+    # date that appears first in the text.
+    ocr = "GENERAL STORE\nReturn any item by 2026-09-30\nDate: 07/15/2026\nTOTAL $22.00\n"
+    fields = extract_fields(ocr)
+    assert fields.date == "2026-07-15", f"got date={fields.date!r}"
+
+
 def test_bookkeeper_correction_overrides_generic_default():
     if RULES_PATH.exists():
         RULES_PATH.unlink()

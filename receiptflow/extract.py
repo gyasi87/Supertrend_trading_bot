@@ -44,8 +44,18 @@ DATE_PATTERNS = [
 # "Balance Due $0.00" after a cash payment silently overwrite the real
 # $138.52 total. Primary is checked first and, when present, wins
 # outright regardless of where secondary matches fall.
+# "GRAND TOTAL" is its own top tier, checked before plain "TOTAL": on a
+# receipt with a tip/gratuity added after the pre-tip subtotal+tax total
+# ("TOTAL $54.00" ... "Tip $10.00" ... "GRAND TOTAL $64.00"), taking the
+# first plain-TOTAL match picked the pre-tip figure, and the arithmetic
+# cross-check below then *certified* it as correct because subtotal+tax
+# does equal the pre-tip total -- the safety check laundered the error
+# instead of catching it. A grand total legitimately does not have to
+# equal subtotal+tax (that's exactly what a tip is), so it is trusted on
+# its own without that cross-check once found.
+GRAND_TOTAL_LINE_RE = re.compile(r"GRAND\s*TOTAL\s*:?\s*\$?\s?(\d[\d,]*\.\d{2})", re.IGNORECASE)
 PRIMARY_TOTAL_LINE_RE = re.compile(
-    r"(TOTAL(?!ED)|GRAND\s*TOTAL|TOTAL\s*DUE)\s*:?\s*\$?\s?(\d[\d,]*\.\d{2})", re.IGNORECASE,
+    r"(TOTAL(?!ED)|TOTAL\s*DUE)\s*:?\s*\$?\s?(\d[\d,]*\.\d{2})", re.IGNORECASE,
 )
 SECONDARY_TOTAL_LINE_RE = re.compile(
     r"(AMOUNT\s*DUE|BALANCE\s*DUE|YOU\s*PAID)\s*:?\s*\$?\s?(\d[\d,]*\.\d{2})", re.IGNORECASE,
@@ -112,37 +122,49 @@ class HeuristicExtractor:
                 conf_hits += 1
                 break
 
-        # date: try each known pattern across the whole text. A digit OCR
-        # misread (e.g. "2026" -> "2626") still parses as a valid date, so
-        # it won't raise -- it has to be caught by sanity-checking the
-        # year against a plausible range, or it silently corrupts the
-        # books instead of routing to review. When the sanity check fails
-        # we still surface the raw (untrusted) parse as `date` so the
-        # review UI can pre-fill a best guess for the bookkeeper to
-        # correct rather than leaving the field blank to type from
-        # scratch -- but it does NOT count toward confidence, so the item
-        # still routes to review either way.
+        # date: search lines carrying a "date" label FIRST, before falling
+        # back to any date-shaped pattern anywhere in the text -- a
+        # receipt can print an unrelated date (a return-by deadline, a
+        # loyalty-program expiry) well before the actual purchase date
+        # line, and an unlabeled whole-text scan has no way to tell them
+        # apart. A digit OCR misread (e.g. "2026" -> "2626") still parses
+        # as a valid date, so it won't raise -- caught separately by
+        # sanity-checking the year against a plausible range. When either
+        # check fails we still surface the raw (untrusted) parse as
+        # `date` so the review UI can pre-fill a best guess rather than
+        # leaving the field blank -- but it does NOT count toward
+        # confidence, so the item still routes to review either way.
         date = None
         current_year = datetime.now().year
-        for pattern, fmt in DATE_PATTERNS:
-            m = pattern.search(ocr_text)
-            if m:
-                try:
-                    parsed = datetime.strptime(m.group(1), fmt).date()
-                    date = parsed.isoformat()
-                    if current_year - 2 <= parsed.year <= current_year + 1:
-                        conf_hits += 1
-                    break
-                except ValueError:
-                    continue
+        labeled_lines = [l for l in lines if re.search(r"\bdate\b", l, re.IGNORECASE)]
+        near_header_lines = lines[:8]  # where a purchase date conventionally
+        # sits even without a "Date:" label -- trusted as a secondary zone,
+        # searched only if no explicitly labeled line matched
+        for candidate_lines, trustable in ((labeled_lines, True), (near_header_lines, True), (lines, False)):
+            if date is not None:
+                break
+            haystack = "\n".join(candidate_lines)
+            for pattern, fmt in DATE_PATTERNS:
+                m = pattern.search(haystack)
+                if m:
+                    try:
+                        parsed = datetime.strptime(m.group(1), fmt).date()
+                        date = parsed.isoformat()
+                        if trustable and current_year - 2 <= parsed.year <= current_year + 1:
+                            conf_hits += 1
+                        break
+                    except ValueError:
+                        continue
 
-        # total: prefer a PRIMARY explicit-total line ("TOTAL"/"GRAND
-        # TOTAL"/"TOTAL DUE") over a SECONDARY one ("AMOUNT DUE"/"BALANCE
-        # DUE"/"YOU PAID") -- the latter can be the amount left owed after
-        # a partial payment, not the purchase total. Primary: take the
-        # FIRST match (the original total, before any payment-breakdown
-        # lines that follow it). Secondary: only used when no primary
-        # exists anywhere, taking the last match as before.
+        # total: three tiers, checked in order. GRAND TOTAL (the final,
+        # all-inclusive figure, tip/gratuity included -- trusted on its
+        # own, no arithmetic cross-check, since a tip is a legitimate
+        # reason it won't equal subtotal+tax). Then plain TOTAL/TOTAL DUE
+        # (the FIRST match -- the original total, before any payment-
+        # breakdown lines that follow it -- cross-checked against
+        # subtotal+tax when both are known). Then AMOUNT DUE/BALANCE
+        # DUE/YOU PAID only if nothing above matched (can be a post-
+        # payment remainder, not the purchase total).
         total = None
         total_trusted = False
         subtotal_amt = tax_amt = None
@@ -156,31 +178,44 @@ class HeuristicExtractor:
                 nums = MONEY_RE.findall(line)
                 if nums:
                     tax_amt = float(nums[-1].replace(",", ""))
-            m = PRIMARY_TOTAL_LINE_RE.search(line)
-            if m and total is None:
-                total = float(m.group(2).replace(",", ""))
-
-        if total is None:
-            for line in lines:
-                if SUBTOTAL_WORD_RE.search(line):
-                    continue
-                m = SECONDARY_TOTAL_LINE_RE.search(line)
-                if m:
-                    total = float(m.group(2).replace(",", ""))
+            m = GRAND_TOTAL_LINE_RE.search(line)
+            if m:
+                total = float(m.group(1).replace(",", ""))
 
         if total is not None:
             conf_hits += 1
             total_trusted = True
-            # arithmetic cross-check: if subtotal + tax is known and
-            # disagrees with the labeled total by more than a cent, the
-            # label matched but the number itself is suspect (OCR digit
-            # corruption, or a total that doesn't correspond to this
-            # subtotal/tax pair at all) -- don't let a matched label alone
-            # certify a number that fails its own receipt's arithmetic.
-            if subtotal_amt is not None and tax_amt is not None:
-                if abs((subtotal_amt + tax_amt) - total) > 0.02:
-                    total_trusted = False
         else:
+            for line in lines:
+                if SUBTOTAL_WORD_RE.search(line):
+                    continue
+                m = PRIMARY_TOTAL_LINE_RE.search(line)
+                if m and total is None:
+                    total = float(m.group(2).replace(",", ""))
+
+            if total is None:
+                for line in lines:
+                    if SUBTOTAL_WORD_RE.search(line):
+                        continue
+                    m = SECONDARY_TOTAL_LINE_RE.search(line)
+                    if m:
+                        total = float(m.group(2).replace(",", ""))
+
+            if total is not None:
+                conf_hits += 1
+                total_trusted = True
+                # arithmetic cross-check: if subtotal + tax is known and
+                # disagrees with the labeled total by more than a cent,
+                # the label matched but the number itself is suspect (OCR
+                # digit corruption, or a total that doesn't correspond to
+                # this subtotal/tax pair at all) -- don't let a matched
+                # label alone certify a number that fails its own
+                # receipt's arithmetic.
+                if subtotal_amt is not None and tax_amt is not None:
+                    if abs((subtotal_amt + tax_amt) - total) > 0.02:
+                        total_trusted = False
+
+        if total is None:
             amounts = [float(x.replace(",", "")) for x in MONEY_RE.findall(ocr_text)]
             if amounts:
                 total = max(amounts)

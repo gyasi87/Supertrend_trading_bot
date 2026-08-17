@@ -1,0 +1,142 @@
+[
+  {
+    "file": "receipt_01.png",
+    "vendor": "Marriott Downtown",
+    "true_category": "Travel",
+    "true_total": 125.41,
+    "true_date": "2026-01-19"
+  },
+  {
+    "file": "receipt_02.png",
+    "vendor": "Blue Bottle Coffee",
+    "true_category": "Meals & Entertainment",
+    "true_total": 60.04,
+    "true_date": "2026-06-24"
+  },
+  {
+    "file": "receipt_03.png",
+    "vendor": "Whole Foods Market",
+    "true_category": "Meals & Entertainment",
+    "true_total": 127.07,
+    "true_date": "2026-05-23"
+  },
+  {
+    "file": "receipt_04.png",
+    "vendor": "Union Square Diner",
+    "true_category": "Meals & Entertainment",
+    "true_total": 226.99,
+    "true_date": "2026-01-15"
+  },
+  {
+    "file": "receipt_05.png",
+    "vendor": "QuikFuel Station #42",
+    "true_category": "Vehicle & Fuel",
+    "true_total": 226.25,
+    "true_date": "2026-04-17"
+  },
+  {
+    "file": "receipt_06.png",
+    "vendor": "AT&T Wireless",
+    "true_category": "Utilities",
+    "true_total": 122.36,
+    "true_date": "2026-01-16"
+  },
+  {
+    "file": "receipt_07.png",
+    "vendor": "Comcast Business",
+    "true_category": "Utilities",
+    "true_total": 117.05,
+    "true_date": "2026-03-14"
+  },
+  {
+    "file": "receipt_08.png",
+    "vendor": "PG&E",
+    "true_category": "Utilities",
+    "true_total": 138.52,
+    "true_date": "2026-04-07"
+  },
+  {
+    "file": "receipt_09.png",
+    "vendor": "Ace Parking Garage",
+    "true_category": "Travel",
+    "true_total": 171.32,
+    "true_date": "2026-07-03"
+  },
+  {
+    "file": "receipt_10.png",
+    "vendor": "Chevron",
+    "true_category": "Vehicle & Fuel",
+    "true_total": 97.27,
+    "true_date": "2026-01-13"
+  },
+  {
+    "file": "receipt_11.png",
+    "vendor": "Riverside Hardware Co",
+    "true_category": "Supplies & Materials",
+    "true_total": 195.51,
+    "true_date": "2026-07-03"
+  },
+  {
+    "file": "receipt_12.png",
+    "vendor": "Sherwin-Williams Paint",
+    "true_category": "Supplies & Materials",
+    "true_total": 134.4,
+    "true_date": "2026-08-18"
+  },
+  {
+    "file": "receipt_13.png",
+    "vendor": "Staples Office Center",
+    "true_category": "Office Supplies",
+    "true_total": 120.76,
+    "true_date": "2026-07-03"
+  },
+  {
+    "file": "receipt_14.png",
+    "vendor": "Uber Trip",
+    "true_category": "Travel",
+    "true_total": 216.92,
+    "true_date": "2026-03-02"
+  },
+  {
+    "file": "receipt_15.png",
+    "vendor": "Home Depot",
+    "true_category": "Supplies & Materials",
+    "true_total": 176.72,
+    "true_date": "2026-04-08"
+  },
+  {
+    "file": "receipt_16.png",
+    "vendor": "Delta Airlines",
+    "true_category": "Travel",
+    "true_total": 174.75,
+    "true_date": "2026-04-10"
+  },
+  {
+    "file": "receipt_17.png",
+    "vendor": "Ace Hardware",
+    "true_category": "Supplies & Materials",
+    "true_total": 78.89,
+    "true_date": "2026-07-10"
+  },
+  {
+    "file": "receipt_18.png",
+    "vendor": "FedEx Office",
+    "true_category": "Shipping & Postage",
+    "true_total": 170.79,
+    "true_date": "2026-05-16"
+  },
+  {
+    "file": "receipt_19.png",
+    "vendor": "Enterprise Rent-A-Car",
+    "true_category": "Travel",
+    "true_total": 228.76,
+    "true_date": "2026-06-09"
+  },
+  {
+    "file": "receipt_20.png",
+    "vendor": "Costco Wholesale #118",
+    "true_category": "Supplies & Materials",
+    "true_total": 94.21,
+    "true_date": "2026-08-15"
+  }
+]

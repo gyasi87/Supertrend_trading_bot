@@ -1,0 +1,19 @@
+{
+  "documents_processed": 20,
+  "total_wall_time_sec": 4.71,
+  "avg_time_per_doc_sec": 0.236,
+  "accuracy": {
+    "vendor_exact_or_substring": "19/20 (95%)",
+    "total_amount_exact": "18/20 (90%)",
+    "date_exact": "16/20 (80%)",
+    "category_correct_on_first_pass": "19/20 (95%)"
+  },
+  "auto_approved_no_human_touch": "15/20 (75%)",
+  "routed_to_review_queue": 5,
+  "cost_per_doc": {
+    "receiptflow_estimate_usd": 0.0004,
+    "dext_published_self_serve_usd": 0.25,
+    "multiple_cheaper": 625.0
+  },
+  "note": "Accuracy figures are from the heuristic-only extraction path (no LLM fallback exercised -- no API credentials in this sandbox). The LLM fallback in extract.py would run on exactly the 'routed_to_review_queue' subset above and is architected but not live in this run."
+}

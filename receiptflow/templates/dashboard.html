@@ -1,0 +1,66 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>ReceiptFlow Review Queue</title>
+<style>
+  body { font-family: -apple-system, Helvetica, Arial, sans-serif; background:#f5f6f8; margin:0; padding:24px; color:#1a1a1a;}
+  h1 { font-size:20px; }
+  .stats { display:flex; gap:16px; margin-bottom:20px; }
+  .stat { background:white; border-radius:8px; padding:12px 18px; box-shadow:0 1px 3px rgba(0,0,0,.08); }
+  .stat b { display:block; font-size:22px; }
+  .card { background:white; border-radius:8px; padding:16px; margin-bottom:14px; box-shadow:0 1px 3px rgba(0,0,0,.08); display:flex; gap:16px; }
+  .card img { width:120px; border:1px solid #ddd; border-radius:4px; }
+  .fields label { font-size:11px; color:#666; display:block; margin-top:6px; }
+  .fields input, .fields select { font-size:13px; padding:4px 6px; width:220px; }
+  .conf { font-size:11px; padding:2px 6px; border-radius:10px; }
+  .conf.low { background:#ffe1e1; color:#a30000; }
+  .conf.high { background:#e1ffe6; color:#00792e; }
+  button { background:#2563eb; color:white; border:none; padding:8px 14px; border-radius:6px; cursor:pointer; }
+  .approved-row { color:#00792e; font-size:13px; }
+  table { border-collapse: collapse; width:100%; background:white; border-radius:8px; overflow:hidden;}
+  th, td { text-align:left; padding:8px 10px; border-bottom:1px solid #eee; font-size:13px;}
+</style>
+</head>
+<body>
+<h1>ReceiptFlow &mdash; Review Queue</h1>
+<div class="stats">
+  <div class="stat"><b>{{ total }}</b>total processed</div>
+  <div class="stat"><b>{{ needs_review|length }}</b>needs review</div>
+  <div class="stat"><b>{{ approved|length }}</b>approved</div>
+</div>
+
+<h2>Needs review ({{ needs_review|length }})</h2>
+{% for item in needs_review %}
+<div class="card">
+  <img src="/images/{{ item.image }}">
+  <form class="fields" method="post" action="/accept/{{ item.id }}">
+    <div><span class="conf {{ 'low' if item.extract_confidence < 0.7 else 'high' }}">extract conf {{ item.extract_confidence }}</span>
+         <span class="conf {{ 'low' if item.category_confidence < 0.9 else 'high' }}">category conf {{ item.category_confidence }}</span></div>
+    <label>Vendor</label><input name="vendor" value="{{ item.vendor or '' }}">
+    <label>Date</label><input name="date" value="{{ item.date or '' }}">
+    <label>Total</label><input name="total" value="{{ item.total or '' }}">
+    <label>Category</label>
+    <select name="category">
+      {% for c in ["Supplies & Materials","Meals & Entertainment","Vehicle & Fuel","Office Supplies","Travel","Utilities","Shipping & Postage","Uncategorized"] %}
+      <option value="{{c}}" {{ 'selected' if item.category==c else '' }}>{{c}}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" style="margin-top:10px;">Approve</button>
+  </form>
+</div>
+{% endfor %}
+
+<h2>Approved ({{ approved|length }})</h2>
+<table>
+<tr><th>Vendor</th><th>Date</th><th>Total</th><th>Category</th></tr>
+{% for item in approved %}
+<tr><td>{{ item.vendor }}</td><td>{{ item.date }}</td><td>${{ "%.2f"|format(item.total or 0) }}</td><td>{{ item.category }}</td></tr>
+{% endfor %}
+</table>
+
+<form method="post" action="/export" style="margin-top:20px;">
+  <button type="submit">Export approved batch to QuickBooks CSV</button>
+</form>
+</body>
+</html>

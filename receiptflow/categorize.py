@@ -52,9 +52,16 @@ def categorize(vendor: str) -> tuple[str, float]:
         return "Uncategorized", 0.0
     rules = _load_rules()
     v = vendor.lower()
-    for keyword, category in rules.items():
-        if keyword in v:
-            return category, 0.9
+    # match the LONGEST (most specific) matching keyword, not whichever
+    # happens to come first by insertion order -- otherwise a bookkeeper
+    # correction like "shell cafe" -> Meals & Entertainment can never
+    # override the generic default "shell" -> Vehicle & Fuel, since dict
+    # iteration order put the shorter, earlier-inserted default first.
+    # This is what makes learn() below actually take effect.
+    matches = [(keyword, category) for keyword, category in rules.items() if keyword in v]
+    if matches:
+        keyword, category = max(matches, key=lambda kc: len(kc[0]))
+        return category, 0.9
     return "Uncategorized", 0.0
 
 

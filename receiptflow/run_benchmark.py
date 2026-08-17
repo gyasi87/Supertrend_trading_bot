@@ -36,13 +36,13 @@ LLM_COST_PER_CALL = LLM_INPUT_TOKENS / 1e6 * 3.00 + LLM_OUTPUT_TOKENS / 1e6 * 15
 
 # No human reviewer was available to time in this sandbox, so review
 # labor cost is not asserted as a single "measured" number -- it's shown
-# as a sensitivity table instead, at a fully-loaded bookkeeper rate of
-# $30/hr, across a range of seconds-per-document review times. The
-# review UI pre-fills every field (vendor/date/total/category) so the
-# reviewer's job is glance-and-click-approve, not data entry from
-# scratch -- but only real timing data, not this benchmark, can say
-# where in that range it actually lands.
-BOOKKEEPER_HOURLY_RATE = 30.0
+# as a 2D sensitivity table instead: seconds-per-flagged-document x
+# hourly rate. Two rates, because the target customer (high-volume
+# outsourced bookkeeping firms) commonly staffs this exact kind of
+# review queue with offshore labor, not US-based bookkeepers -- showing
+# only $30/hr would understate the advantage for a large share of the
+# actual buyer segment.
+BOOKKEEPER_HOURLY_RATES = {"offshore_12usd_hr": 12.0, "us_based_30usd_hr": 30.0}
 REVIEW_SECONDS_SCENARIOS = [15, 30, 60, 120]
 
 
@@ -68,15 +68,18 @@ def main():
     review_fraction = summary["needs_review"] / n
     llm_cost_per_doc = review_fraction * LLM_COST_PER_CALL  # LLM only called on the review-flagged subset
 
-    fully_loaded_by_review_time = {}
-    for secs in REVIEW_SECONDS_SCENARIOS:
-        review_labor_per_doc = review_fraction * (secs / 3600) * BOOKKEEPER_HOURLY_RATE
-        total = compute_cost_per_doc + llm_cost_per_doc + review_labor_per_doc
-        fully_loaded_by_review_time[f"{secs}s_review_per_flagged_doc"] = {
-            "fully_loaded_cost_per_doc_usd": round(total, 4),
-            "vs_dext_cheaper_multiple": round(DEXT_COST_PER_DOC / total, 2) if total > 0 else None,
-            "beats_dext": total < DEXT_COST_PER_DOC,
-        }
+    fully_loaded_sensitivity = {}
+    for rate_label, rate in BOOKKEEPER_HOURLY_RATES.items():
+        by_time = {}
+        for secs in REVIEW_SECONDS_SCENARIOS:
+            review_labor_per_doc = review_fraction * (secs / 3600) * rate
+            total = compute_cost_per_doc + llm_cost_per_doc + review_labor_per_doc
+            by_time[f"{secs}s_review_per_flagged_doc"] = {
+                "fully_loaded_cost_per_doc_usd": round(total, 4),
+                "vs_dext_cheaper_multiple": round(DEXT_COST_PER_DOC / total, 2) if total > 0 else None,
+                "beats_dext": total < DEXT_COST_PER_DOC,
+            }
+        fully_loaded_sensitivity[rate_label] = by_time
 
     report = {
         "documents_processed": n,
@@ -94,7 +97,7 @@ def main():
             "compute_only_usd": round(compute_cost_per_doc, 5),
             "llm_fallback_blended_usd": round(llm_cost_per_doc, 5),
             "dext_published_self_serve_usd": DEXT_COST_PER_DOC,
-            "fully_loaded_by_review_time_assumption": fully_loaded_by_review_time,
+            "fully_loaded_sensitivity_by_rate_and_review_time": fully_loaded_sensitivity,
         },
         "note": (
             "Accuracy figures are from the heuristic-only extraction path (no "

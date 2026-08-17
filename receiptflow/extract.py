@@ -42,12 +42,18 @@ SUBTOTAL_WORD_RE = re.compile(r"\bSUB\s*-?\s*TOTAL", re.IGNORECASE)
 # lines that are clearly receipt metadata, not a business name -- a store
 # number, phone number, transaction id, or date line can have plenty of
 # alphabetic characters ("Store #895 Tel: (555) 308-1930") and used to
-# out-score the real vendor name under a pure alpha-count heuristic
-METADATA_LINE_RE = re.compile(
-    r"store\s*#|tel:?\s*\(?\d|trans(?:action)?\s*#|\bdate:?\b|\breceipt\b|\binvoice\s*#|"
-    r"\(\d{3}\)\s*\d{3}[-.]?\d{4}",
+# out-score the real vendor name under a pure alpha-count heuristic.
+# Anchored to the START of the line: a business whose actual name
+# contains "Store #" ("The UPS Store #1234") should still win vendor
+# selection, since the label only appears as noise mid-line there, not
+# as the line's own subject -- an unanchored search killed that case.
+METADATA_LINE_START_RE = re.compile(
+    r"^\s*(store\s*#|tel:?\s*\(?\d|trans(?:action)?\s*#|date:?\b|receipt\b|invoice\s*#)",
     re.IGNORECASE,
 )
+# a bare phone number, in contrast, essentially never appears as part of
+# a business's printed name, so this one is fine to match anywhere
+PHONE_NUMBER_RE = re.compile(r"\(\d{3}\)\s*\d{3}[-.]?\d{4}")
 
 
 @dataclass
@@ -57,6 +63,13 @@ class ExtractedFields:
     total: Optional[float]
     confidence: float
     method: str
+    # False when `total` is a fallback guess (the largest dollar amount
+    # found anywhere on the receipt) rather than a match on an explicit
+    # TOTAL/AMOUNT DUE/etc. line. A guessed total can pick up a pre-auth
+    # hold, a tip suggestion, or a line-item price larger than the actual
+    # total -- it must never be enough on its own to clear auto-approval,
+    # no matter how confident the other fields are. See pipeline.py.
+    total_trusted: bool = True
 
     def to_dict(self):
         return asdict(self)
@@ -78,7 +91,7 @@ class HeuristicExtractor:
         # lines are excluded before scoring rather than after.
         vendor = None
         for l in lines[:5]:
-            if METADATA_LINE_RE.search(l):
+            if METADATA_LINE_START_RE.match(l) or PHONE_NUMBER_RE.search(l):
                 continue
             letters = sum(c.isalpha() for c in l)
             if letters >= 2:
@@ -116,6 +129,7 @@ class HeuristicExtractor:
         # The real total line is usually the last such match on a receipt,
         # since subtotal/tax are listed before the grand total.
         total = None
+        total_trusted = False
         for line in lines:
             if SUBTOTAL_WORD_RE.search(line):
                 continue
@@ -124,16 +138,19 @@ class HeuristicExtractor:
                 total = float(m.group(2).replace(",", ""))
         if total is not None:
             conf_hits += 1
+            total_trusted = True
         else:
             amounts = [float(x.replace(",", "")) for x in MONEY_RE.findall(ocr_text)]
             if amounts:
                 total = max(amounts)
-                conf_hits += 0.4  # partial credit -- lower confidence
+                conf_hits += 0.4  # partial credit toward the *display* confidence score only --
+                # total_trusted stays False, which independently blocks
+                # auto-approval in pipeline.py regardless of this score
 
         confidence = conf_hits / conf_total
         return ExtractedFields(vendor=vendor, date=date, total=total,
                                 confidence=round(min(confidence, 1.0), 2),
-                                method="heuristic")
+                                method="heuristic", total_trusted=total_trusted)
 
 
 class LLMExtractor:

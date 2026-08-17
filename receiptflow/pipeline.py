@@ -33,7 +33,14 @@ def process_batch(image_dir: Path = SAMPLE_DIR) -> dict:
             "extract_method": fields.method,
             "category": category,
             "category_confidence": cat_conf,
-            "status": "needs_review" if (fields.confidence < 0.7 or cat_conf < 0.9) else "auto_approved",
+            "total_trusted": fields.total_trusted,
+            # A guessed (non-explicit) total is a hard gate, independent of
+            # the blended confidence score -- it must never let a document
+            # auto-approve, because a guessed amount can be a pre-auth
+            # hold or a line-item price rather than the real total.
+            "status": ("needs_review"
+                       if (fields.confidence < 0.7 or cat_conf < 0.9 or not fields.total_trusted)
+                       else "auto_approved"),
             "elapsed_sec": round(elapsed, 3),
         })
 

@@ -36,47 +36,70 @@ photo noise (rotation, blur, crumple lines, sensor noise) -- see
 
 ```
 documents_processed: 20
-avg_time_per_doc: 0.24s (commodity CPU, no GPU)
+avg_time_per_doc: 0.23s (commodity CPU, no GPU)
 vendor accuracy: 100%
 total-amount accuracy: 90%
 category accuracy (first pass): 100%
-auto-approved with zero human touch: 80%
+auto-approved with zero human touch: 75%
 silently-wrong auto-approvals: 0 / 20   <-- the number that actually matters
 ```
 
-The `silently-wrong auto-approvals: 0/20` line is the real claim: every
-extraction the pipeline got wrong or was unsure about was caught by the
-confidence-gated review queue, not shipped into a client's books.
+**Two rounds of blind critique found real bugs, both fixed and now
+regression-tested (`test_extraction.py`):**
 
-**On cost: an earlier version of this README compared our raw compute
-cost ($0.0004/doc) against Dext's all-in list price ($0.25/doc) and
-called it a 625x win. A blind critic correctly flagged that as an
-apples-to-oranges comparison** -- Dext's price already bundles whatever
-extraction-plus-correction labor Dext absorbs, so the fair number is our
-own **fully-loaded** cost: compute + the per-call cost of the LLM
-fallback on flagged documents (a real, published-pricing estimate, not a
-live call) + bookkeeper review labor on the 20% of documents routed to
-review.
+1. *Vendor extraction* originally picked whichever of the first lines
+   had the most alphabetic characters, so a metadata line ("Store #895
+   Tel: (555) 308-1930") could beat a short real name ("PG&E"). Fixed by
+   excluding lines that clearly *start with* a metadata label, while
+   still letting a vendor name that merely *contains* one through (e.g.
+   "The UPS Store #1234" -- an unanchored first fix broke this case, and
+   there's a test for it now).
+2. *The auto-approve safety gate had a hole*: when no explicit
+   TOTAL/AMOUNT DUE line exists, the extractor guesses the largest
+   dollar amount on the receipt -- which can be a pre-auth hold or a
+   line-item price, not the real total. That guess used to earn partial
+   confidence credit that could still clear the auto-approve threshold
+   blended with a good vendor+date. Fixed: a guessed total now carries a
+   `total_trusted=False` flag that hard-blocks auto-approval regardless
+   of the blended confidence score -- confirmed with a constructed
+   adversarial receipt in `test_extraction.py`, not just the benchmark
+   batch. Also fixed: the categorization rule engine matched keywords by
+   dict insertion order, so a bookkeeper's correction (e.g. "Shell Cafe"
+   -> Meals & Entertainment) could never override a shorter generic
+   default ("shell" -> Vehicle & Fuel) inserted earlier -- it now matches
+   the most specific (longest) keyword, which is what makes the
+   "learns from corrections" claim actually true.
 
-No human reviewer was available in this sandbox to time the review
-step, so instead of asserting a single made-up number, here's the
-fully-loaded cost at a range of plausible review times per flagged
-document, compared against Dext's $0.25/doc list price:
+The `silently-wrong auto-approvals: 0/20` line is the real claim, and it
+now rests on an explicit hard gate (`total_trusted`), not just on
+threshold tuning that happened to work on one benchmark batch.
 
-| Review time / flagged doc | Fully-loaded cost/doc | vs. Dext |
+**On cost:** the fair number is fully-loaded -- compute + the per-call
+cost of the LLM fallback on flagged documents (published Sonnet 5
+pricing, not a live call) + bookkeeper review labor on the 25% of
+documents routed to review. No human reviewer was available in this
+sandbox to time the review step, so instead of asserting one number,
+here's the sensitivity across plausible review times AND labor rates
+(the target customer -- high-volume outsourced bookkeeping firms --
+commonly staffs review with offshore labor, not only US-based staff):
+
+| Review time / flagged doc | Offshore ($12/hr) | US-based ($30/hr) |
 |---|---|---|
-| 15s (glance-and-approve, pre-filled form) | $0.026 | 9.6x cheaper |
-| 30s | $0.051 | 4.9x cheaper |
-| 60s | $0.101 | 2.5x cheaper |
-| 120s (full manual re-entry, worst case) | $0.201 | 1.2x cheaper |
+| 15s (glance-and-approve, pre-filled form) | $0.014 -- 18.3x cheaper | $0.032 -- 7.7x cheaper |
+| 30s | $0.026 -- 9.6x cheaper | $0.064 -- 3.9x cheaper |
+| 60s | $0.051 -- 4.9x cheaper | $0.126 -- 2.0x cheaper |
+| 120s (full manual re-entry, worst case) | $0.101 -- 2.5x cheaper | $0.251 -- roughly at parity |
 
-It beats Dext's list price across the whole range, including the
-pessimistic 2-minutes-per-flagged-document case -- because only 20% of
-documents are flagged at all, review cost gets diluted 5x before it hits
-the per-document blended average. The realistic case (pre-filled fields,
+At an offshore review rate it beats Dext's list price across the whole
+range. At a US-based rate it beats Dext everywhere except the most
+pessimistic case (2 minutes of manual re-entry per flagged document),
+where it's roughly a wash rather than a clear win -- stated plainly
+rather than rounded away. The realistic case (pre-filled fields,
 click-to-approve UI, per the screenshot) is closer to the 15-30s rows.
 
 Full JSON report: `benchmark_report.json` (regenerated on every run).
+Regression tests for the specific bugs found by critique:
+`python3 test_extraction.py`.
 
 ## Running it
 
@@ -105,6 +128,30 @@ python3 qbo_export.py           # export approved batch to qbo_export.csv
   heuristic-only -- they do not assume the LLM fallback works, so they
   understate the production system's expected accuracy on the hardest
   25% of receipts.
+
+## Known limitations (not yet fixed)
+
+- **The synthetic benchmark is not a substitute for real messy
+  receipts.** `generate_samples.py` adds rotation/blur/noise/crumple
+  lines, but has no thermal-paper fade, handwriting, perspective
+  distortion, or real camera lighting -- and it also generated the
+  ground truth, so accuracy numbers can't be assumed to generalize to
+  actually messy photos. No real receipt dataset could be downloaded in
+  this sandbox (huggingface.co and similar hosts are network-blocked).
+  This is the single biggest thing a next iteration needs: real receipt
+  photos, or at minimum a much harsher synthetic generator.
+- **Ambiguous numeric dates can silently misparse.** "3-7-2026" is
+  parsed as day-month-year (March 7 vs July 3) by pattern order in
+  `extract.py`, which matches this project's own synthetic date
+  generator but is a genuine ambiguity on real US receipts using
+  dash-separated MM-DD-YYYY. Not yet disambiguated or confidence-gated.
+- **The LLM fallback has never actually run.** It's real, callable code
+  (`LLMExtractor` in `extract.py`), but every accuracy number in this
+  README is heuristic-only, because no Anthropic API key is available to
+  standalone scripts in this sandbox. The fallback exists specifically
+  to handle the harder end of the messy-receipt distribution that the
+  heuristic pass routes to review -- until it's exercised against real
+  cases, its contribution is a design claim, not a measured one.
 
 ## Unit math to $100k/month
 

@@ -10,8 +10,9 @@
     "extract_method": "heuristic",
     "category": "Travel",
     "category_confidence": 0.9,
+    "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.239
+    "elapsed_sec": 0.221
   },
   {
     "id": "receipt_02",
@@ -24,8 +25,9 @@
     "extract_method": "heuristic",
     "category": "Meals & Entertainment",
     "category_confidence": 0.9,
+    "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.195
+    "elapsed_sec": 0.196
   },
   {
     "id": "receipt_03",
@@ -38,8 +40,9 @@
     "extract_method": "heuristic",
     "category": "Meals & Entertainment",
     "category_confidence": 0.9,
+    "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.316
+    "elapsed_sec": 0.226
   },
   {
     "id": "receipt_04",
@@ -52,8 +55,9 @@
     "extract_method": "heuristic",
     "category": "Meals & Entertainment",
     "category_confidence": 0.9,
+    "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.353
+    "elapsed_sec": 0.378
   },
   {
     "id": "receipt_05",
@@ -66,8 +70,9 @@
     "extract_method": "heuristic",
     "category": "Vehicle & Fuel",
     "category_confidence": 0.9,
+    "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.219
+    "elapsed_sec": 0.203
   },
   {
     "id": "receipt_06",
@@ -80,8 +85,9 @@
     "extract_method": "heuristic",
     "category": "Utilities",
     "category_confidence": 0.9,
+    "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.191
+    "elapsed_sec": 0.18
   },
   {
     "id": "receipt_07",
@@ -94,6 +100,7 @@
     "extract_method": "heuristic",
     "category": "Utilities",
     "category_confidence": 0.9,
+    "total_trusted": true,
     "status": "auto_approved",
     "elapsed_sec": 0.214
   },
@@ -108,8 +115,9 @@
     "extract_method": "heuristic",
     "category": "Utilities",
     "category_confidence": 0.9,
+    "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.222
+    "elapsed_sec": 0.203
   },
   {
     "id": "receipt_09",
@@ -122,8 +130,9 @@
     "extract_method": "heuristic",
     "category": "Travel",
     "category_confidence": 0.9,
+    "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.197
+    "elapsed_sec": 0.181
   },
   {
     "id": "receipt_10",
@@ -136,8 +145,9 @@
     "extract_method": "heuristic",
     "category": "Vehicle & Fuel",
     "category_confidence": 0.9,
+    "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.183
+    "elapsed_sec": 0.172
   },
   {
     "id": "receipt_11",
@@ -150,8 +160,9 @@
     "extract_method": "heuristic",
     "category": "Supplies & Materials",
     "category_confidence": 0.9,
+    "total_trusted": true,
     "status": "needs_review",
-    "elapsed_sec": 0.225
+    "elapsed_sec": 0.198
   },
   {
     "id": "receipt_12",
@@ -164,8 +175,9 @@
     "extract_method": "heuristic",
     "category": "Supplies & Materials",
     "category_confidence": 0.9,
+    "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.224
+    "elapsed_sec": 0.222
   },
   {
     "id": "receipt_13",
@@ -178,8 +190,9 @@
     "extract_method": "heuristic",
     "category": "Office Supplies",
     "category_confidence": 0.9,
+    "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.259
+    "elapsed_sec": 0.245
   },
   {
     "id": "receipt_14",
@@ -192,8 +205,9 @@
     "extract_method": "heuristic",
     "category": "Travel",
     "category_confidence": 0.9,
+    "total_trusted": false,
     "status": "needs_review",
-    "elapsed_sec": 0.185
+    "elapsed_sec": 0.195
   },
   {
     "id": "receipt_15",
@@ -206,6 +220,7 @@
     "extract_method": "heuristic",
     "category": "Supplies & Materials",
     "category_confidence": 0.9,
+    "total_trusted": true,
     "status": "auto_approved",
     "elapsed_sec": 0.2
   },
@@ -220,8 +235,9 @@
     "extract_method": "heuristic",
     "category": "Travel",
     "category_confidence": 0.9,
+    "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.178
+    "elapsed_sec": 0.179
   },
   {
     "id": "receipt_17",
@@ -234,8 +250,9 @@
     "extract_method": "heuristic",
     "category": "Supplies & Materials",
     "category_confidence": 0.9,
+    "total_trusted": false,
     "status": "needs_review",
-    "elapsed_sec": 0.198
+    "elapsed_sec": 0.208
   },
   {
     "id": "receipt_18",
@@ -248,8 +265,9 @@
     "extract_method": "heuristic",
     "category": "Shipping & Postage",
     "category_confidence": 0.9,
+    "total_trusted": true,
     "status": "needs_review",
-    "elapsed_sec": 0.232
+    "elapsed_sec": 0.226
   },
   {
     "id": "receipt_19",
@@ -262,8 +280,9 @@
     "extract_method": "heuristic",
     "category": "Travel",
     "category_confidence": 0.9,
+    "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.39
+    "elapsed_sec": 0.396
   },
   {
     "id": "receipt_20",
@@ -276,7 +295,8 @@
     "extract_method": "heuristic",
     "category": "Supplies & Materials",
     "category_confidence": 0.9,
-    "status": "auto_approved",
-    "elapsed_sec": 0.448
+    "total_trusted": false,
+    "status": "needs_review",
+    "elapsed_sec": 0.408
   }
 ]

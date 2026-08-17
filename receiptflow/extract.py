@@ -39,6 +39,15 @@ TOTAL_LINE_RE = re.compile(
     re.IGNORECASE,
 )
 SUBTOTAL_WORD_RE = re.compile(r"\bSUB\s*-?\s*TOTAL", re.IGNORECASE)
+# lines that are clearly receipt metadata, not a business name -- a store
+# number, phone number, transaction id, or date line can have plenty of
+# alphabetic characters ("Store #895 Tel: (555) 308-1930") and used to
+# out-score the real vendor name under a pure alpha-count heuristic
+METADATA_LINE_RE = re.compile(
+    r"store\s*#|tel:?\s*\(?\d|trans(?:action)?\s*#|\bdate:?\b|\breceipt\b|\binvoice\s*#|"
+    r"\(\d{3}\)\s*\d{3}[-.]?\d{4}",
+    re.IGNORECASE,
+)
 
 
 @dataclass
@@ -61,11 +70,18 @@ class HeuristicExtractor:
         conf_hits = 0
         conf_total = 3
 
-        # vendor: best-guess is the first substantial alphabetic line
+        # vendor: the first line that (a) has real letters and (b) isn't
+        # obviously metadata (store#/phone/trans#/date) -- receipts print
+        # the business name first, but a pure "most alphabetic characters"
+        # heuristic loses to a metadata line like "Store #895 Tel: (555)
+        # 308-1930" against a short-but-real name like "PG&E", so metadata
+        # lines are excluded before scoring rather than after.
         vendor = None
-        for l in lines[:4]:
+        for l in lines[:5]:
+            if METADATA_LINE_RE.search(l):
+                continue
             letters = sum(c.isalpha() for c in l)
-            if letters >= 4:
+            if letters >= 2:
                 vendor = l.title()
                 conf_hits += 1
                 break
@@ -74,7 +90,12 @@ class HeuristicExtractor:
         # misread (e.g. "2026" -> "2626") still parses as a valid date, so
         # it won't raise -- it has to be caught by sanity-checking the
         # year against a plausible range, or it silently corrupts the
-        # books instead of routing to review.
+        # books instead of routing to review. When the sanity check fails
+        # we still surface the raw (untrusted) parse as `date` so the
+        # review UI can pre-fill a best guess for the bookkeeper to
+        # correct rather than leaving the field blank to type from
+        # scratch -- but it does NOT count toward confidence, so the item
+        # still routes to review either way.
         date = None
         current_year = datetime.now().year
         for pattern, fmt in DATE_PATTERNS:
@@ -82,8 +103,8 @@ class HeuristicExtractor:
             if m:
                 try:
                     parsed = datetime.strptime(m.group(1), fmt).date()
+                    date = parsed.isoformat()
                     if current_year - 2 <= parsed.year <= current_year + 1:
-                        date = parsed.isoformat()
                         conf_hits += 1
                     break
                 except ValueError:

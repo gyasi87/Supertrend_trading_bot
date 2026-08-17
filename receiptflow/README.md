@@ -37,22 +37,44 @@ photo noise (rotation, blur, crumple lines, sensor noise) -- see
 ```
 documents_processed: 20
 avg_time_per_doc: 0.24s (commodity CPU, no GPU)
-vendor accuracy: 95%
+vendor accuracy: 100%
 total-amount accuracy: 90%
-category accuracy (first pass): 95%
-auto-approved with zero human touch: 75%
+category accuracy (first pass): 100%
+auto-approved with zero human touch: 80%
 silently-wrong auto-approvals: 0 / 20   <-- the number that actually matters
-cost per doc: ~$0.0004 vs Dext's ~$0.25 (≈625x)
 ```
 
 The `silently-wrong auto-approvals: 0/20` line is the real claim: every
 extraction the pipeline got wrong or was unsure about was caught by the
-confidence-gated review queue, not shipped into a client's books. That
-property, not raw OCR accuracy, is what a bookkeeping firm is actually
-buying -- Dext's expensive, this comparison says, largely because someone
-still has to check every non-template receipt by hand; this pipeline
-routes only the genuinely uncertain 25% to a human and auto-clears the
-rest with zero silent errors.
+confidence-gated review queue, not shipped into a client's books.
+
+**On cost: an earlier version of this README compared our raw compute
+cost ($0.0004/doc) against Dext's all-in list price ($0.25/doc) and
+called it a 625x win. A blind critic correctly flagged that as an
+apples-to-oranges comparison** -- Dext's price already bundles whatever
+extraction-plus-correction labor Dext absorbs, so the fair number is our
+own **fully-loaded** cost: compute + the per-call cost of the LLM
+fallback on flagged documents (a real, published-pricing estimate, not a
+live call) + bookkeeper review labor on the 20% of documents routed to
+review.
+
+No human reviewer was available in this sandbox to time the review
+step, so instead of asserting a single made-up number, here's the
+fully-loaded cost at a range of plausible review times per flagged
+document, compared against Dext's $0.25/doc list price:
+
+| Review time / flagged doc | Fully-loaded cost/doc | vs. Dext |
+|---|---|---|
+| 15s (glance-and-approve, pre-filled form) | $0.026 | 9.6x cheaper |
+| 30s | $0.051 | 4.9x cheaper |
+| 60s | $0.101 | 2.5x cheaper |
+| 120s (full manual re-entry, worst case) | $0.201 | 1.2x cheaper |
+
+It beats Dext's list price across the whole range, including the
+pessimistic 2-minutes-per-flagged-document case -- because only 20% of
+documents are flagged at all, review cost gets diluted 5x before it hits
+the per-document blended average. The realistic case (pre-filled fields,
+click-to-approve UI, per the screenshot) is closer to the 15-30s rows.
 
 Full JSON report: `benchmark_report.json` (regenerated on every run).
 

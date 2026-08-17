@@ -1,19 +1,41 @@
 {
   "documents_processed": 20,
-  "total_wall_time_sec": 4.71,
-  "avg_time_per_doc_sec": 0.236,
+  "total_wall_time_sec": 4.867,
+  "avg_time_per_doc_sec": 0.243,
   "accuracy": {
-    "vendor_exact_or_substring": "19/20 (95%)",
+    "vendor_exact_or_substring": "20/20 (100%)",
     "total_amount_exact": "18/20 (90%)",
     "date_exact": "16/20 (80%)",
-    "category_correct_on_first_pass": "19/20 (95%)"
+    "category_correct_on_first_pass": "20/20 (100%)"
   },
-  "auto_approved_no_human_touch": "15/20 (75%)",
-  "routed_to_review_queue": 5,
+  "auto_approved_no_human_touch": "16/20 (80%)",
+  "routed_to_review_queue": 4,
   "cost_per_doc": {
-    "receiptflow_estimate_usd": 0.0004,
+    "compute_only_usd": 0.0004,
+    "llm_fallback_blended_usd": 0.0006,
     "dext_published_self_serve_usd": 0.25,
-    "multiple_cheaper": 625.0
+    "fully_loaded_by_review_time_assumption": {
+      "15s_review_per_flagged_doc": {
+        "fully_loaded_cost_per_doc_usd": 0.026,
+        "vs_dext_cheaper_multiple": 9.62,
+        "beats_dext": true
+      },
+      "30s_review_per_flagged_doc": {
+        "fully_loaded_cost_per_doc_usd": 0.051,
+        "vs_dext_cheaper_multiple": 4.9,
+        "beats_dext": true
+      },
+      "60s_review_per_flagged_doc": {
+        "fully_loaded_cost_per_doc_usd": 0.101,
+        "vs_dext_cheaper_multiple": 2.48,
+        "beats_dext": true
+      },
+      "120s_review_per_flagged_doc": {
+        "fully_loaded_cost_per_doc_usd": 0.201,
+        "vs_dext_cheaper_multiple": 1.24,
+        "beats_dext": true
+      }
+    }
   },
-  "note": "Accuracy figures are from the heuristic-only extraction path (no LLM fallback exercised -- no API credentials in this sandbox). The LLM fallback in extract.py would run on exactly the 'routed_to_review_queue' subset above and is architected but not live in this run."
+  "note": "Accuracy figures are from the heuristic-only extraction path (no LLM fallback exercised -- no API credentials in this sandbox). The LLM fallback cost is a blended per-doc estimate (full per-call price x the fraction of docs actually routed to review) using published Claude Sonnet 5 API pricing, not a live call. Review-labor cost has NO real timing data behind it -- no human reviewer was available to measure in this sandbox -- so it is shown as a sensitivity table across plausible review times per flagged document, not asserted as a single number. 'compute-only cheaper than Dext' was the previous (misleading) framing; 'fully loaded, does it beat Dext at a given review time' is the honest one."
 }

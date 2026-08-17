@@ -11,7 +11,7 @@
     "category": "Travel",
     "category_confidence": 0.9,
     "status": "auto_approved",
-    "elapsed_sec": 0.235
+    "elapsed_sec": 0.239
   },
   {
     "id": "receipt_02",
@@ -25,7 +25,7 @@
     "category": "Meals & Entertainment",
     "category_confidence": 0.9,
     "status": "auto_approved",
-    "elapsed_sec": 0.2
+    "elapsed_sec": 0.195
   },
   {
     "id": "receipt_03",
@@ -39,7 +39,7 @@
     "category": "Meals & Entertainment",
     "category_confidence": 0.9,
     "status": "auto_approved",
-    "elapsed_sec": 0.227
+    "elapsed_sec": 0.316
   },
   {
     "id": "receipt_04",
@@ -67,7 +67,7 @@
     "category": "Vehicle & Fuel",
     "category_confidence": 0.9,
     "status": "auto_approved",
-    "elapsed_sec": 0.245
+    "elapsed_sec": 0.219
   },
   {
     "id": "receipt_06",
@@ -81,7 +81,7 @@
     "category": "Utilities",
     "category_confidence": 0.9,
     "status": "auto_approved",
-    "elapsed_sec": 0.18
+    "elapsed_sec": 0.191
   },
   {
     "id": "receipt_07",
@@ -95,21 +95,21 @@
     "category": "Utilities",
     "category_confidence": 0.9,
     "status": "auto_approved",
-    "elapsed_sec": 0.21
+    "elapsed_sec": 0.214
   },
   {
     "id": "receipt_08",
     "image": "receipt_08.png",
     "ocr_text": "PG&E\n\nStore #895 Tel: (555) 308-1930\n\nDate: 07-04-2026\n\nTrans# 574140\n\nService Fee $4140\n\nMisc Item $86.72\neee\nSubtota] $128.12\nVAT $10.40\nGrand Total $138.52\n",
-    "vendor": "Store #895 Tel: (555) 308-1930",
+    "vendor": "Pg&E",
     "date": "2026-04-07",
     "total": 138.52,
     "extract_confidence": 1.0,
     "extract_method": "heuristic",
-    "category": "Uncategorized",
-    "category_confidence": 0.0,
-    "status": "needs_review",
-    "elapsed_sec": 0.211
+    "category": "Utilities",
+    "category_confidence": 0.9,
+    "status": "auto_approved",
+    "elapsed_sec": 0.222
   },
   {
     "id": "receipt_09",
@@ -123,7 +123,7 @@
     "category": "Travel",
     "category_confidence": 0.9,
     "status": "auto_approved",
-    "elapsed_sec": 0.168
+    "elapsed_sec": 0.197
   },
   {
     "id": "receipt_10",
@@ -137,7 +137,7 @@
     "category": "Vehicle & Fuel",
     "category_confidence": 0.9,
     "status": "auto_approved",
-    "elapsed_sec": 0.175
+    "elapsed_sec": 0.183
   },
   {
     "id": "receipt_11",
@@ -151,7 +151,7 @@
     "category": "Supplies & Materials",
     "category_confidence": 0.9,
     "status": "needs_review",
-    "elapsed_sec": 0.188
+    "elapsed_sec": 0.225
   },
   {
     "id": "receipt_12",
@@ -165,7 +165,7 @@
     "category": "Supplies & Materials",
     "category_confidence": 0.9,
     "status": "auto_approved",
-    "elapsed_sec": 0.216
+    "elapsed_sec": 0.224
   },
   {
     "id": "receipt_13",
@@ -179,7 +179,7 @@
     "category": "Office Supplies",
     "category_confidence": 0.9,
     "status": "auto_approved",
-    "elapsed_sec": 0.23
+    "elapsed_sec": 0.259
   },
   {
     "id": "receipt_14",
@@ -193,7 +193,7 @@
     "category": "Travel",
     "category_confidence": 0.9,
     "status": "needs_review",
-    "elapsed_sec": 0.182
+    "elapsed_sec": 0.185
   },
   {
     "id": "receipt_15",
@@ -207,7 +207,7 @@
     "category": "Supplies & Materials",
     "category_confidence": 0.9,
     "status": "auto_approved",
-    "elapsed_sec": 0.195
+    "elapsed_sec": 0.2
   },
   {
     "id": "receipt_16",
@@ -221,7 +221,7 @@
     "category": "Travel",
     "category_confidence": 0.9,
     "status": "auto_approved",
-    "elapsed_sec": 0.185
+    "elapsed_sec": 0.178
   },
   {
     "id": "receipt_17",
@@ -235,7 +235,7 @@
     "category": "Supplies & Materials",
     "category_confidence": 0.9,
     "status": "needs_review",
-    "elapsed_sec": 0.199
+    "elapsed_sec": 0.198
   },
   {
     "id": "receipt_18",
@@ -249,7 +249,7 @@
     "category": "Shipping & Postage",
     "category_confidence": 0.9,
     "status": "needs_review",
-    "elapsed_sec": 0.243
+    "elapsed_sec": 0.232
   },
   {
     "id": "receipt_19",
@@ -263,7 +263,7 @@
     "category": "Travel",
     "category_confidence": 0.9,
     "status": "auto_approved",
-    "elapsed_sec": 0.422
+    "elapsed_sec": 0.39
   },
   {
     "id": "receipt_20",
@@ -277,6 +277,6 @@
     "category": "Supplies & Materials",
     "category_confidence": 0.9,
     "status": "auto_approved",
-    "elapsed_sec": 0.446
+    "elapsed_sec": 0.448
   }
 ]

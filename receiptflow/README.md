@@ -44,8 +44,8 @@ auto-approved with zero human touch: 70%
 silently-wrong auto-approvals: 0 / 20   <-- the number that actually matters
 ```
 
-**Six rounds of blind critique found real bugs, all fixed and now
-regression-tested (`test_extraction.py`, 17/17 passing):**
+**Seven rounds of blind critique found real bugs, all fixed and now
+regression-tested (`test_extraction.py`, 20/20 passing):**
 
 1. *Vendor extraction* originally picked whichever of the first lines
    had the most alphabetic characters, so a metadata line ("Store #895
@@ -117,21 +117,42 @@ regression-tested (`test_extraction.py`, 17/17 passing):**
    by anchoring all three total-line tiers to the start of the line --
    "TOTAL DUE" starts with the label, "Room Total" does not.
 
+9. *Round 6's anchoring fix over-corrected: it required the total label
+   immediately adjacent to the amount, not just leading the line.* That
+   broke real, common labels where a qualifier word sits between the
+   label and the number -- "TOTAL AMOUNT DUE: $138.52" (a canonical
+   utility-bill/invoice label) and "AMOUNT DUE THIS PERIOD: $54.00" both
+   stopped matching anything and fell through to the untrusted guess
+   path. Fixed by requiring only that the LINE start with the label
+   (allowing thermal-printer decoration like "** TOTAL **"), while
+   letting a lazy `.*?` absorb qualifier text before the amount --
+   "Room Total $180.00" still correctly fails to match (the line starts
+   with "Room", not a total-ish label), so the round-6 fix's actual
+   protection is preserved; only its unintentionally narrow adjacency
+   requirement was loosened.
+
 The `silently-wrong auto-approvals: 0/20` line is the real claim, and
-each round of adversarial construction against it (thirteen constructed
-cases across six rounds, all now regression tests) has failed to break
+each round of adversarial construction against it (sixteen constructed
+cases across seven rounds, all now regression tests) has failed to break
 it -- though the auto-approval rate has dropped from 80% to 70% as the
 gates got stricter, which is the honest cost of the guarantee actually
-holding rather than passing by coincidence on one benchmark batch. Note
-that rounds 4 and 5 form a pair worth being candid about: round 4's fix
-for the tip-laundering bug (exempting GRAND TOTAL from arithmetic
-checking) itself introduced the gap round 5 found. Round 5's fix was a
-narrower, one-directional constraint rather than another blanket
-exemption, specifically to avoid the same failure pattern a third time
--- and round 6 found a different bug entirely (an anchoring gap, not a
-gap in the arithmetic logic), which is a reasonable signal that the
-fixes are converging on distinct failure classes rather than chasing
-the same one in circles.
+holding rather than passing by coincidence on one benchmark batch.
+
+This project's fix history has a visible pattern worth stating plainly
+rather than hiding: three separate times (rounds 2, 4→5, 6→7) a fix for
+one adversarial case was itself too broad or too narrow and needed a
+follow-up correction in the same area. That is not a reason to trust the
+current state less than the numbers say -- every one of those follow-up
+corrections was itself caught by continuing the same critique process,
+and all sixteen cases found across seven rounds are now regression
+tests that would catch a reintroduction. It is a reason to treat "20/20
+tests passing today" as a snapshot of a still-maturing safety gate, not
+a proof of completeness -- the seventh critic round's own recommendation
+was that further rounds of this specific exercise (hand-constructing
+receipt text against the total-extraction regexes) have reached
+diminishing returns, and that the more valuable next step is external:
+real receipt photos and the live LLM fallback, not another round of
+sandbox-constructed adversarial text.
 
 **Genuine limitations round 4 surfaced that are NOT fixed** (documented,
 not patched around, because they're structural to a keyword/regex

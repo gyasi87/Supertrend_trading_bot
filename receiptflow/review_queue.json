@@ -12,7 +12,7 @@
     "category_confidence": 0.9,
     "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.264
+    "elapsed_sec": 0.224
   },
   {
     "id": "receipt_02",
@@ -27,7 +27,7 @@
     "category_confidence": 0.9,
     "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.222
+    "elapsed_sec": 0.194
   },
   {
     "id": "receipt_03",
@@ -42,7 +42,7 @@
     "category_confidence": 0.9,
     "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.26
+    "elapsed_sec": 0.235
   },
   {
     "id": "receipt_04",
@@ -57,7 +57,7 @@
     "category_confidence": 0.9,
     "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.406
+    "elapsed_sec": 0.371
   },
   {
     "id": "receipt_05",
@@ -72,7 +72,7 @@
     "category_confidence": 0.9,
     "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.264
+    "elapsed_sec": 0.211
   },
   {
     "id": "receipt_06",
@@ -87,7 +87,7 @@
     "category_confidence": 0.9,
     "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.224
+    "elapsed_sec": 0.205
   },
   {
     "id": "receipt_07",
@@ -102,7 +102,7 @@
     "category_confidence": 0.9,
     "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.243
+    "elapsed_sec": 0.227
   },
   {
     "id": "receipt_08",
@@ -117,7 +117,7 @@
     "category_confidence": 0.9,
     "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.244
+    "elapsed_sec": 0.204
   },
   {
     "id": "receipt_09",
@@ -132,7 +132,7 @@
     "category_confidence": 0.9,
     "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.191
+    "elapsed_sec": 0.171
   },
   {
     "id": "receipt_10",
@@ -147,7 +147,7 @@
     "category_confidence": 0.9,
     "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.187
+    "elapsed_sec": 0.178
   },
   {
     "id": "receipt_11",
@@ -162,7 +162,7 @@
     "category_confidence": 0.9,
     "total_trusted": true,
     "status": "needs_review",
-    "elapsed_sec": 0.207
+    "elapsed_sec": 0.201
   },
   {
     "id": "receipt_12",
@@ -177,7 +177,7 @@
     "category_confidence": 0.9,
     "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.233
+    "elapsed_sec": 0.242
   },
   {
     "id": "receipt_13",
@@ -192,7 +192,7 @@
     "category_confidence": 0.9,
     "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.241
+    "elapsed_sec": 0.255
   },
   {
     "id": "receipt_14",
@@ -207,7 +207,7 @@
     "category_confidence": 0.9,
     "total_trusted": false,
     "status": "needs_review",
-    "elapsed_sec": 0.188
+    "elapsed_sec": 0.215
   },
   {
     "id": "receipt_15",
@@ -222,7 +222,7 @@
     "category_confidence": 0.9,
     "total_trusted": false,
     "status": "needs_review",
-    "elapsed_sec": 0.219
+    "elapsed_sec": 0.222
   },
   {
     "id": "receipt_16",
@@ -237,7 +237,7 @@
     "category_confidence": 0.9,
     "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.191
+    "elapsed_sec": 0.177
   },
   {
     "id": "receipt_17",
@@ -252,7 +252,7 @@
     "category_confidence": 0.9,
     "total_trusted": false,
     "status": "needs_review",
-    "elapsed_sec": 0.202
+    "elapsed_sec": 0.214
   },
   {
     "id": "receipt_18",
@@ -267,7 +267,7 @@
     "category_confidence": 0.9,
     "total_trusted": true,
     "status": "needs_review",
-    "elapsed_sec": 0.234
+    "elapsed_sec": 0.27
   },
   {
     "id": "receipt_19",
@@ -282,7 +282,7 @@
     "category_confidence": 0.9,
     "total_trusted": true,
     "status": "auto_approved",
-    "elapsed_sec": 0.386
+    "elapsed_sec": 0.435
   },
   {
     "id": "receipt_20",
@@ -297,6 +297,6 @@
     "category_confidence": 0.9,
     "total_trusted": false,
     "status": "needs_review",
-    "elapsed_sec": 0.425
+    "elapsed_sec": 0.47
   }
 ]

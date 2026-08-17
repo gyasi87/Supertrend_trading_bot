@@ -137,6 +137,31 @@ def test_qualifier_prefixed_total_line_is_not_matched_as_primary():
     assert fields.total_trusted is False, "an unanchored component total must not be trusted as the document total"
 
 
+def test_total_amount_due_label_with_qualifier_words_is_recognized():
+    # The first anchoring fix (round 6) required the label immediately
+    # adjacent to the amount, which broke this canonical invoice/utility
+    # label: qualifier words sit between "TOTAL" and the dollar amount,
+    # not just punctuation. Must still be trusted.
+    ocr = "CITY UTILITIES\n2026-03-14\nTOTAL AMOUNT DUE: $138.52\n"
+    fields = extract_fields(ocr)
+    assert fields.total == 138.52
+    assert fields.total_trusted is True
+
+
+def test_amount_due_with_trailing_qualifier_is_recognized():
+    ocr = "CITY UTILITIES\n2026-03-14\nAMOUNT DUE THIS PERIOD: $54.00\n"
+    fields = extract_fields(ocr)
+    assert fields.total == 54.00
+    assert fields.total_trusted is True
+
+
+def test_thermal_printer_decoration_around_total_label_still_matches():
+    ocr = "CORNER STORE\n2026-03-14\n** TOTAL ** $54.00\n"
+    fields = extract_fields(ocr)
+    assert fields.total == 54.00
+    assert fields.total_trusted is True
+
+
 def test_bookkeeper_correction_overrides_generic_default():
     if RULES_PATH.exists():
         RULES_PATH.unlink()

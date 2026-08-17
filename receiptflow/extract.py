@@ -54,22 +54,36 @@ DATE_PATTERNS = [
 # equal subtotal+tax (that's exactly what a tip is), so it is trusted on
 # its own without that cross-check once found.
 # All three tiers are anchored to the START of the line (allowing only
-# leading whitespace). An unanchored "TOTAL" substring search matches a
-# *component* total just as happily as the document's real total --
-# "Room Total $180.00" on a hotel folio, "Food Total $40.00" on an
-# itemized restaurant check, a per-line-item "Total" column on an
-# invoice -- and being first in reading order, a qualifier-prefixed
-# component total would win over the real "TOTAL DUE" line that follows
-# it. This is the same failure shape as the earlier vendor-metadata bug
-# (an unanchored match beats a qualified one) applied to a new field --
-# anchoring is the fix there too: "TOTAL DUE $210.00" starts with the
-# label, "Room Total $180.00" does not.
-GRAND_TOTAL_LINE_RE = re.compile(r"^\s*GRAND\s*TOTAL\s*:?\s*\$?\s?(\d[\d,]*\.\d{2})", re.IGNORECASE)
+# leading whitespace and thermal-printer decoration like "** TOTAL **").
+# An unanchored "TOTAL" substring search matches a *component* total just
+# as happily as the document's real total -- "Room Total $180.00" on a
+# hotel folio, "Food Total $40.00" on an itemized restaurant check -- and
+# being first in reading order, a qualifier-prefixed component total
+# would win over the real "TOTAL DUE" line that follows it. This is the
+# same failure shape as the earlier vendor-metadata bug (an unanchored
+# match beats a qualified one) applied to a new field -- anchoring is the
+# fix there too: "TOTAL DUE $210.00" starts with the label, "Room Total
+# $180.00" does not.
+#
+# The first anchoring pass required the label immediately adjacent to
+# the amount ("TOTAL\s*:?\s*\$?\s?<amount>"), which broke just as many
+# real labels as it fixed: "TOTAL AMOUNT DUE: $138.52" (a canonical
+# invoice/utility-bill label) or "AMOUNT DUE THIS PERIOD: $54.00" no
+# longer matched anything, since a qualifier word sits between the label
+# and the amount, not just punctuation. The fix isn't "label touches the
+# amount", it's "the LINE starts with the label" -- qualifier text is
+# free to sit between the label and the amount, as long as nothing but
+# whitespace/decoration precedes the label itself. `.*?` (lazy) between
+# the label and the first captured amount allows that without reopening
+# the component-total bug, since "Room"/"Food" still aren't decoration
+# characters and still fail the leading anchor.
+_LEADING_DECORATION = r"^[\s*=~\-]*"
+GRAND_TOTAL_LINE_RE = re.compile(_LEADING_DECORATION + r"GRAND\s*TOTAL\b.*?(\d[\d,]*\.\d{2})", re.IGNORECASE)
 PRIMARY_TOTAL_LINE_RE = re.compile(
-    r"^\s*(TOTAL(?!ED)|TOTAL\s*DUE)\s*:?\s*\$?\s?(\d[\d,]*\.\d{2})", re.IGNORECASE,
+    _LEADING_DECORATION + r"(TOTAL(?!ED)|TOTAL\s*DUE)\b.*?(\d[\d,]*\.\d{2})", re.IGNORECASE,
 )
 SECONDARY_TOTAL_LINE_RE = re.compile(
-    r"^\s*(AMOUNT\s*DUE|BALANCE\s*DUE|YOU\s*PAID)\s*:?\s*\$?\s?(\d[\d,]*\.\d{2})", re.IGNORECASE,
+    _LEADING_DECORATION + r"(AMOUNT\s*DUE|BALANCE\s*DUE|YOU\s*PAID)\b.*?(\d[\d,]*\.\d{2})", re.IGNORECASE,
 )
 SUBTOTAL_WORD_RE = re.compile(r"\bSUB\s*-?\s*TOTAL", re.IGNORECASE)
 TAX_WORD_RE = re.compile(r"\b(SALES\s*TAX|HST|VAT|TAX)\b", re.IGNORECASE)
